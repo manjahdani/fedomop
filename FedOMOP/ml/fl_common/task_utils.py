@@ -25,25 +25,12 @@ from flwr.common import (
     log,
 )
 
-from maidam.ml.models.classification import(_cnn_factory,
-                                            _cnn_split_factory,
-                                            _femnist_factory,
-                                            _femnist_split_factory,
-                                            _resnet18_factory,)
-
-from maidam.ml.models.regression import (_insilico_linear, 
-                                         _insilico_mlp, 
-                                         _insilico_smlp)
 
 from maidam.ml.models.tabular import (_hospital_resnet, 
                                       _hospital_resnet_split, 
                                       _mimiciv_resnet,
                                      _mimiciv_resnet_split)
 
-
-from maidam.ml.models.detection import(
-    _yolo
-)
 
 
 def seed_all(seed: int) -> None:
@@ -89,44 +76,11 @@ def _build_manager(model_name : str,
                    device: str):
     
     """Return the appropriate ModelManager instance based on run_config['model']."""
-    from maidam.ml.models.cifar_decomposable import CifarManager   
-    from maidam.ml.models.femnnistnet_decomposable import FemnistManager
-    from maidam.ml.models.regression_decomposable import MLPManager
+
     from maidam.ml.models.tabular_decomposable import ResnetManager
 
-    if dataset == "cifar10":
-        num_classes = 10
-    elif dataset == "cifar100":
-        num_classes = 100
     
-    spec = DATASETS[dataset]
-    registry = {
-        # LightCNN split (your working FedPer LightCNN)
-        "CNN_CIFAR_SPLIT":  lambda: CifarManager(
-            client_id=client_id,
-            trainloader=trainloader,
-            valloader=valloader,
-            device=device,
-            n_cls=num_classes
-        )
-    }
-
-    registry["DFEMNISTNet"] = lambda: FemnistManager(
-            client_id=client_id,
-            trainloader=trainloader,
-            valloader=valloader,
-            device=device,
-        )
-
-
-    registry["SMLP"] = lambda: MLPManager(
-            client_id=client_id,
-            trainloader=trainloader,
-            valloader=valloader,
-            input_size= spec.num_features,
-            output_size= spec.num_targets,
-            device=device,
-        )
+    registry = {}
 
     registry["ResnetSplit"] = lambda: ResnetManager(
             client_id=client_id,
@@ -161,12 +115,8 @@ def _get_dataloaders(dataset: str,
                      seed: int, 
                      partition_split: str, 
                      dataset_split_alpha: float):
-     
-    if dataset == "insilico":
-        from maidam.ml.datasets.insilico_dataset_utils import load_data
-        return load_data(partition_id, num_partitions, batch_size)
     
-    elif dataset == "hospital":
+    if dataset == "hospital":
         from maidam.ml.datasets.hospital_dataset_utils import load_data, build_global_preprocessor
         preprocessor, num_cols, cat_cols = build_global_preprocessor()
         return load_data(partition_id, preprocessor, num_cols, cat_cols)
@@ -174,20 +124,7 @@ def _get_dataloaders(dataset: str,
     elif dataset == "mimiciv":
         from maidam.ml.datasets.hospital_dataset_utils import load_data_mimiiv
         return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
-
-    elif dataset == "walt":
-        from maidam.ml.datasets.walt import load_dataset
-        return load_dataset(partition_id, batch_size)
     
-    elif dataset in ["cifar10", "cifar100", "femnist","tiny_imagenet"]:
-        from maidam.ml.datasets.classification_ds import load_data
-        return load_data(dataset, 
-                         partition_id, 
-                         num_partitions,
-                         batch_size, 
-                         partition_split, 
-                         dataset_split_alpha, 
-                         seed)
     else:
         raise NotImplementedError(f"No method for {dataset}")
 
@@ -205,16 +142,6 @@ DATASETS: Dict[str, DatasetSpec] = {
             "ResnetSplit": _hospital_resnet_split
         },
     ),
-    "walt": DatasetSpec(
-        features=None,
-        targets= None,
-        criterion="mAP50-95",
-        backend = "detection",
-        isErrorMetric = False,
-        models={
-            "YOLO": _yolo ,
-        },
-    ),
     "mimiciv": DatasetSpec(
         features=None,
         targets= None,
@@ -225,54 +152,7 @@ DATASETS: Dict[str, DatasetSpec] = {
             "ResnetMimic": _mimiciv_resnet,
             "ResnetSplitMimic": _mimiciv_resnet_split
         },
-    ),
-    "insilico": DatasetSpec(
-        features=("Glc", "Gln", "Amm", "Lac", "DCD", "Lysed", "Titer"),
-        targets=("Aggr", "HCP", "LMW", "C_A", "C_B", "C_N"),
-        criterion= "rmse",
-        backend = "regression",
-        isErrorMetric = True,
-        models={
-            "LinearRegression": _insilico_linear,
-            "MLP": _insilico_mlp,
-            "SMLP": _insilico_smlp,
-        },
-    ),
-    "cifar10": DatasetSpec(
-        features=None,  # not needed by the CNN constructor
-        targets=None,
-        criterion="acc",
-        backend = "classification",
-        isErrorMetric = False,
-        models={"CNN_CIFAR": _cnn_factory(10),
-                "CNN_CIFAR_SPLIT":_cnn_split_factory(10)},
-    ),
-    "cifar100": DatasetSpec(
-        features=None,  # not needed by the CNN constructor
-        targets=None,
-        criterion="acc",
-        backend = "classification",
-        isErrorMetric = False,
-        models={"CNN_CIFAR": _cnn_factory(100),
-                "CNN_CIFAR_SPLIT":_cnn_split_factory(100)},
-    ),
-    "femnist": DatasetSpec(
-        features=None,  # not needed by the CNN constructor
-        targets=None,
-        criterion="acc",
-        backend = "classification",
-        isErrorMetric = False,
-        models={"FEMNISTNet": _femnist_factory, "DFEMNISTNet":_femnist_split_factory},
-    ),
-     "tiny_imagenet": DatasetSpec(
-        features=None,  # not needed by the CNN constructor
-        targets=None,
-        criterion="acc",
-        backend = "classification",
-        isErrorMetric = False,
-        models={"resnet18": _resnet18_factory},
-    ),
-}
+    ),}
 
 def get_weights(net):
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
@@ -290,17 +170,8 @@ def get_train_and_test_modules(dataset: str):
     criterion = getattr(spec, "criterion")
     isErrorMetric = getattr(spec, "isErrorMetric")
 
-    if backend == "regression":
-        from maidam.ml.models.regression import train, test
-
-    elif backend == "classification":
-        from maidam.ml.models.classification import train, test
-
-    elif backend == "tabular":
+    if backend == "tabular":
         from maidam.ml.models.tabular import train, test
-    
-    elif backend == "detection":
-        from maidam.ml.models.detection import train, test
 
     elif dataset in ["tabular-mimiciv"]:
         from maidam.ml.models.tabular import train_h as train
