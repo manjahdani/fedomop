@@ -2,8 +2,8 @@
 from flwr.app import ArrayRecord, Context, Message, MetricRecord
 import torch
 
-from maidam.ml.models.helpers import save_layer_weights_to_state, load_layer_weights_from_state
-from maidam.ml.fl_common.task_utils import _build_manager, _get_dataloaders
+from FedOMOP.ml.models.helpers import save_layer_weights_to_state, load_layer_weights_from_state
+from FedOMOP.ml.fl_common.task_utils import _build_manager, _get_dataloaders
 
 
 def train_fedper(msg: Message, context: Context):

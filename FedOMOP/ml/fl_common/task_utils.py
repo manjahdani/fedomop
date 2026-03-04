@@ -26,7 +26,7 @@ from flwr.common import (
 )
 
 
-from maidam.ml.models.tabular import (_hospital_resnet, 
+from FedOMOP.ml.models.tabular import (_hospital_resnet, 
                                       _hospital_resnet_split, 
                                       _mimiciv_resnet,
                                      _mimiciv_resnet_split)
@@ -77,7 +77,7 @@ def _build_manager(model_name : str,
     
     """Return the appropriate ModelManager instance based on run_config['model']."""
 
-    from maidam.ml.models.tabular_decomposable import ResnetManager
+    from FedOMOP.ml.models.tabular_decomposable import ResnetManager
 
     
     registry = {}
@@ -117,12 +117,12 @@ def _get_dataloaders(dataset: str,
                      dataset_split_alpha: float):
     
     if dataset == "hospital":
-        from maidam.ml.datasets.hospital_dataset_utils import load_data, build_global_preprocessor
+        from FedOMOP.ml.datasets.hospital_dataset_utils import load_data, build_global_preprocessor
         preprocessor, num_cols, cat_cols = build_global_preprocessor()
         return load_data(partition_id, preprocessor, num_cols, cat_cols)
 
     elif dataset == "mimiciv":
-        from maidam.ml.datasets.hospital_dataset_utils import load_data_mimiiv
+        from FedOMOP.ml.datasets.hospital_dataset_utils import load_data_mimiiv
         return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
     
     else:
@@ -171,11 +171,11 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from maidam.ml.models.tabular import train, test
+        from FedOMOP.ml.models.tabular import train, test
 
     elif dataset in ["tabular-mimiciv"]:
-        from maidam.ml.models.tabular import train_h as train
-        from maidam.ml.models.tabular import test_h as test
+        from FedOMOP.ml.models.tabular import train_h as train
+        from FedOMOP.ml.models.tabular import test_h as test
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")
     

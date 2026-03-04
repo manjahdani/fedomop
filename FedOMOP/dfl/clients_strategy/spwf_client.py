@@ -6,8 +6,8 @@ from flwr.serverapp.strategy.strategy_utils import aggregate_arrayrecords
 import numpy as np
 import torch
 
-from maidam.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
-from maidam.ml.models.helpers import save_model_from_to_state, load_model_from_state
+from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
+from FedOMOP.ml.models.helpers import save_model_from_to_state, load_model_from_state
 
 
 def evaluate_peers(models_with_ids: list[tuple[int, ArrayRecord]], dataset, model_cls, context: Context):

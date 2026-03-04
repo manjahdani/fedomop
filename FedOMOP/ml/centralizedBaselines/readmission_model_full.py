@@ -12,8 +12,8 @@ from sklearn.feature_selection import mutual_info_classif
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
-from maidam.ml.models.tabular import FederatedResNet, train, test
-from maidam.ml.datasets.hospital_dataset_utils import data_preparation, load_data, build_global_preprocessor
+from FedOMOP.ml.models.tabular import FederatedResNet, train, test
+from FedOMOP.ml.datasets.hospital_dataset_utils import data_preparation, load_data, build_global_preprocessor
 # ---------------------
 # CONFIGURABLE SETTINGS
 # ---------------------

@@ -9,10 +9,10 @@ from logging import INFO, WARNING
 from flwr.common.logger import log
 from collections.abc import Iterable
 from typing import Callable, Optional, Tuple
-from maidam.cfl.clients_strategy.fed_avg_client import train_fedavg, eval_fedavg
-from maidam.cfl.clients_strategy.fed_per_client import train_fedper, eval_fedper
-from maidam.cfl.clients_strategy.ditto_client import train_ditto, eval_ditto
-from maidam.ml.fl_common.task_utils import seed_all
+from FedOMOP.cfl.clients_strategy.fed_avg_client import train_fedavg, eval_fedavg
+from FedOMOP.cfl.clients_strategy.fed_per_client import train_fedper, eval_fedper
+from FedOMOP.cfl.clients_strategy.ditto_client import train_ditto, eval_ditto
+from FedOMOP.ml.fl_common.task_utils import seed_all
 
 # Flower ClientApp
 app = ClientApp()

@@ -5,11 +5,11 @@ from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 from flwr.common.logger import log
 
-from maidam.dfl.clients_strategy.self_training_client import train_self
-from maidam.dfl.clients_strategy.spwf_client import nn_model_training, train_spwf, nn_eval
-from maidam.ml.fl_common.task_utils import create_instantiate_parameters
-from maidam.ml.models.helpers import load_model_from_state, save_model_from_to_state
-from maidam.ml.fl_common.task_utils import seed_all
+from FedOMOP.dfl.clients_strategy.self_training_client import train_self
+from FedOMOP.dfl.clients_strategy.spwf_client import nn_model_training, train_spwf, nn_eval
+from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters
+from FedOMOP.ml.models.helpers import load_model_from_state, save_model_from_to_state
+from FedOMOP.ml.fl_common.task_utils import seed_all
 
 # Flower ClientApp
 app = ClientApp()

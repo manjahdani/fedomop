@@ -9,8 +9,8 @@ import torch.nn as nn
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from maidam.ml.models.decomposable import ModelManager, ModelSplit
-from maidam.ml.models.tabular import FederatedResNet, train, test, train_h, test_h
+from FedOMOP.ml.models.decomposable import ModelManager, ModelSplit
+from FedOMOP.ml.models.tabular import FederatedResNet, train, test, train_h, test_h
 
 
 # -------------------- Body/Head split --------------------

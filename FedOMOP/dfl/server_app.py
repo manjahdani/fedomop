@@ -2,10 +2,10 @@ from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
 import torch
 
-from maidam.dfl.server_strategy.orchestrator import Orchestrator
-from maidam.dfl.server_strategy.router import Router
-from maidam.ml.fl_common.task_utils import create_instantiate_parameters, custom_aggregate_metricrecords, seed_all
-from maidam.ml.metrics.utils import config_json_file, save_metrics_as_json
+from FedOMOP.dfl.server_strategy.orchestrator import Orchestrator
+from FedOMOP.dfl.server_strategy.router import Router
+from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, custom_aggregate_metricrecords, seed_all
+from FedOMOP.ml.metrics.utils import config_json_file, save_metrics_as_json
 
 # Create ServerApp
 app = ServerApp()
