@@ -34,8 +34,8 @@ include=["maidam*"]
 [tool.flwr.app.config]
 num-server-rounds=30
 fraction-evaluate=1.0
-strategy="FedAvg" # ["FedAvg"]
-dataset="mimiciv" # ["insilico", cifar10]
+strategy="FedAvg"
+dataset="mimiciv"
 partition_split = "Dirichlet"
 dataset_split_alpha=0.3
 model="MLP" # ["MLP", "LinearRegression", "CNN"]

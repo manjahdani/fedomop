@@ -11,9 +11,9 @@ Each client has its own `.env` file:
 IT HAS TO BE ADAPTED
 
 ```env
-SUPERLINK_IP=130.104.204.58
+SUPERLINK_IP=${IP_ADDRESS}
 PROJECT_DIR=../ 
-HOST_DATA_DIR=/export/home/manjah/data 
+HOST_DATA_DIR=${path_to_data}#Where data is hosted C:/home/$USER/data 
 ```
 
 
@@ -39,7 +39,7 @@ and you just have to provide the path to your data folder
 for example: 
 
 ```
-/home/user/data
+/home/$USER/data
 ```
 
 ## Create Container
