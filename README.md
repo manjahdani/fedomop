@@ -1,20 +1,17 @@
-# Client Guide — Federated Learning with Flower & Docker
+# Personalized Federated Framework with Flower & Docker for OMOP-CDM Multi-Hospital Data
 
-**Author:** Dani Manjah  
-**Last update:** 16/12/2025
+**Author:** Dani Manjah and Pierre Remacle
+**Last update:** 05/03/2026
 
-This repository documents how to deploy and run a stateful (i.e., has an idea of its past) **Federated Learning (FL) experiments**
-using **Flower** and **Docker Compose** in a distributed, multi-machine setup.
-
-The goal is to:
-- Ensure reproducible environments across clients
-- Avoid “works on my machine” issues
-- Enable scalable deployment (Docker / Kubernetes ready)
-- Support client drop-in / drop-out without stopping FL
+This repository documents how to run simulations and deploy stateful **Federated Learning (FL) experiments**
+using **Flower** and **Docker Compose** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data.
 
 ---
 
 ## Documentation
+
+### Simulation 
+- [Overview](docs/07_mimiciv.md)
 
 ### Simulation 
 - [Overview](docs/06_simu.md)
