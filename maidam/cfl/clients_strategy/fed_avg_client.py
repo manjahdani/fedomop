@@ -1,0 +1,69 @@
+from flwr.app import ArrayRecord, Context, Message, MetricRecord
+import torch
+
+from maidam.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
+
+def train_fedavg(msg: Message, context: Context):
+    """Train the model on local data."""
+    # Load the data
+    dataset = context.run_config["dataset"]
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+    batch_size = context.run_config["batch-size"]
+    seed = context.run_config["seed"]
+    model_cls = context.run_config["model"]
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    train_fn, _, _, _ = get_train_and_test_modules(dataset)
+
+    trainloader, _ = _get_dataloaders(dataset, 
+                                      partition_id, 
+                                      num_partitions, 
+                                      batch_size, 
+                                      seed, 
+                                      context.run_config["partition_split"], 
+                                      context.run_config["dataset_split_alpha"])
+
+    # Load the model and initialize it with the received weights
+    model = create_instantiate_parameters(dataset, model_cls)
+    model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
+    
+    
+    # Train model
+    train_metrics = train_fn(
+            model,
+            trainloader,
+            context.run_config["local-epochs"],
+            msg.content["config"]["lr"],
+            context.run_config["momentum"],
+            context.run_config["weight_decay"],
+            device,
+        )
+    return model.state_dict(), train_metrics 
+
+
+def eval_fedavg(msg: Message, context: Context):
+    """Evaluate the model on local data."""
+
+    dataset = context.run_config["dataset"]
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+    batch_size = context.run_config["batch-size"]
+    seed = context.run_config["seed"]
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model_cls = context.run_config["model"]
+    _,test_fn,_, _ = get_train_and_test_modules(dataset)
+    
+    #Load Model 
+    model = create_instantiate_parameters(dataset, model_cls) 
+    model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
+    
+
+    _, valloader = _get_dataloaders(dataset, 
+                                    partition_id, 
+                                    num_partitions, 
+                                    batch_size, 
+                                    seed, 
+                                    context.run_config["partition_split"], 
+                                    context.run_config["dataset_split_alpha"])
+
+    return test_fn(model, valloader, device)

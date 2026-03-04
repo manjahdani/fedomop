@@ -1,0 +1,440 @@
+from __future__ import annotations
+
+from pathlib import Path
+import os, random
+import numpy as np
+import torch
+
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from dataclasses import dataclass
+from typing import Callable, Dict, Tuple, cast
+from collections import OrderedDict
+from flwr.common.typing import UserConfig
+import json
+import datetime
+from logging import INFO
+
+
+import numpy as np
+
+from flwr.common import (
+    ConfigRecord,
+    MetricRecord,
+    RecordDict,
+    log,
+)
+
+from maidam.ml.models.classification import(_cnn_factory,
+                                            _cnn_split_factory,
+                                            _femnist_factory,
+                                            _femnist_split_factory,
+                                            _resnet18_factory,)
+
+from maidam.ml.models.regression import (_insilico_linear, 
+                                         _insilico_mlp, 
+                                         _insilico_smlp)
+
+from maidam.ml.models.tabular import (_hospital_resnet, 
+                                      _hospital_resnet_split, 
+                                      _mimiciv_resnet,
+                                     _mimiciv_resnet_split)
+
+
+from maidam.ml.models.detection import(
+    _yolo
+)
+
+
+def seed_all(seed: int) -> None:
+    # To ensure  
+
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    # Ensure deterministic cuBLAS (PyTorch docs)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # or ":16:8" for smaller
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.use_deterministic_algorithms(True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+# ---------- Dataset registry ----------
+
+@dataclass(frozen=True)
+class DatasetSpec:
+    features: Tuple[str, ...] | None
+    targets: Tuple[str, ...] | None
+    # factory takes (num_features, num_targets); it may ignore them
+    models: Dict[str, Callable[[int, int], nn.Module]]
+    criterion: str
+    isErrorMetric: bool
+    backend: str
+    
+    @property
+    def num_features(self) -> int:
+        return 0 if self.features is None else len(self.features)
+
+    @property
+    def num_targets(self) -> int:
+        return 0 if self.targets is None else len(self.targets)
+
+# ---------- manager factory ----------
+def _build_manager(model_name : str, 
+                   client_id : int, 
+                   dataset : str, 
+                   trainloader: DataLoader, 
+                   valloader: DataLoader, 
+                   device: str):
+    
+    """Return the appropriate ModelManager instance based on run_config['model']."""
+    from maidam.ml.models.cifar_decomposable import CifarManager   
+    from maidam.ml.models.femnnistnet_decomposable import FemnistManager
+    from maidam.ml.models.regression_decomposable import MLPManager
+    from maidam.ml.models.tabular_decomposable import ResnetManager
+
+    if dataset == "cifar10":
+        num_classes = 10
+    elif dataset == "cifar100":
+        num_classes = 100
+    
+    spec = DATASETS[dataset]
+    registry = {
+        # LightCNN split (your working FedPer LightCNN)
+        "CNN_CIFAR_SPLIT":  lambda: CifarManager(
+            client_id=client_id,
+            trainloader=trainloader,
+            valloader=valloader,
+            device=device,
+            n_cls=num_classes
+        )
+    }
+
+    registry["DFEMNISTNet"] = lambda: FemnistManager(
+            client_id=client_id,
+            trainloader=trainloader,
+            valloader=valloader,
+            device=device,
+        )
+
+
+    registry["SMLP"] = lambda: MLPManager(
+            client_id=client_id,
+            trainloader=trainloader,
+            valloader=valloader,
+            input_size= spec.num_features,
+            output_size= spec.num_targets,
+            device=device,
+        )
+
+    registry["ResnetSplit"] = lambda: ResnetManager(
+            client_id=client_id,
+            trainloader=trainloader,
+            valloader=valloader,
+            input_dim= 26,
+            device=device,
+        )
+    registry["ResnetSplitMimic"] = lambda: ResnetManager(
+            client_id=client_id,
+            trainloader=trainloader,
+            valloader=valloader,
+            input_dim= 12818,
+            device=device,
+        )
+    if model_name not in registry:
+        available = ", ".join(sorted(registry))
+        raise NotImplementedError(
+            f"FedPer client: unknown decomposable model '{model_name}'. "
+            f"Available managers: {available}"
+        )
+
+    return registry[model_name]()
+
+
+
+
+def _get_dataloaders(dataset: str, 
+                     partition_id: int, 
+                     num_partitions: int, 
+                     batch_size: int, 
+                     seed: int, 
+                     partition_split: str, 
+                     dataset_split_alpha: float):
+     
+    if dataset == "insilico":
+        from maidam.ml.datasets.insilico_dataset_utils import load_data
+        return load_data(partition_id, num_partitions, batch_size)
+    
+    elif dataset == "hospital":
+        from maidam.ml.datasets.hospital_dataset_utils import load_data, build_global_preprocessor
+        preprocessor, num_cols, cat_cols = build_global_preprocessor()
+        return load_data(partition_id, preprocessor, num_cols, cat_cols)
+
+    elif dataset == "mimiciv":
+        from maidam.ml.datasets.hospital_dataset_utils import load_data_mimiiv
+        return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
+
+    elif dataset == "walt":
+        from maidam.ml.datasets.walt import load_dataset
+        return load_dataset(partition_id, batch_size)
+    
+    elif dataset in ["cifar10", "cifar100", "femnist","tiny_imagenet"]:
+        from maidam.ml.datasets.classification_ds import load_data
+        return load_data(dataset, 
+                         partition_id, 
+                         num_partitions,
+                         batch_size, 
+                         partition_split, 
+                         dataset_split_alpha, 
+                         seed)
+    else:
+        raise NotImplementedError(f"No method for {dataset}")
+
+
+
+DATASETS: Dict[str, DatasetSpec] = {
+    "hospital": DatasetSpec(
+        features=None,
+        targets= None,
+        criterion="auroc",
+        backend = "tabular",
+        isErrorMetric = False,
+        models={
+            "Resnet": _hospital_resnet,
+            "ResnetSplit": _hospital_resnet_split
+        },
+    ),
+    "walt": DatasetSpec(
+        features=None,
+        targets= None,
+        criterion="mAP50-95",
+        backend = "detection",
+        isErrorMetric = False,
+        models={
+            "YOLO": _yolo ,
+        },
+    ),
+    "mimiciv": DatasetSpec(
+        features=None,
+        targets= None,
+        criterion="auroc",
+        backend = "tabular-mimiciv",
+        isErrorMetric = False,
+        models={
+            "ResnetMimic": _mimiciv_resnet,
+            "ResnetSplitMimic": _mimiciv_resnet_split
+        },
+    ),
+    "insilico": DatasetSpec(
+        features=("Glc", "Gln", "Amm", "Lac", "DCD", "Lysed", "Titer"),
+        targets=("Aggr", "HCP", "LMW", "C_A", "C_B", "C_N"),
+        criterion= "rmse",
+        backend = "regression",
+        isErrorMetric = True,
+        models={
+            "LinearRegression": _insilico_linear,
+            "MLP": _insilico_mlp,
+            "SMLP": _insilico_smlp,
+        },
+    ),
+    "cifar10": DatasetSpec(
+        features=None,  # not needed by the CNN constructor
+        targets=None,
+        criterion="acc",
+        backend = "classification",
+        isErrorMetric = False,
+        models={"CNN_CIFAR": _cnn_factory(10),
+                "CNN_CIFAR_SPLIT":_cnn_split_factory(10)},
+    ),
+    "cifar100": DatasetSpec(
+        features=None,  # not needed by the CNN constructor
+        targets=None,
+        criterion="acc",
+        backend = "classification",
+        isErrorMetric = False,
+        models={"CNN_CIFAR": _cnn_factory(100),
+                "CNN_CIFAR_SPLIT":_cnn_split_factory(100)},
+    ),
+    "femnist": DatasetSpec(
+        features=None,  # not needed by the CNN constructor
+        targets=None,
+        criterion="acc",
+        backend = "classification",
+        isErrorMetric = False,
+        models={"FEMNISTNet": _femnist_factory, "DFEMNISTNet":_femnist_split_factory},
+    ),
+     "tiny_imagenet": DatasetSpec(
+        features=None,  # not needed by the CNN constructor
+        targets=None,
+        criterion="acc",
+        backend = "classification",
+        isErrorMetric = False,
+        models={"resnet18": _resnet18_factory},
+    ),
+}
+
+def get_weights(net):
+    return [val.cpu().numpy() for _, val in net.state_dict().items()]
+
+def set_weights(net: nn.Module, parameters):
+    params_dict = zip(net.state_dict().keys(), parameters)
+    state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
+    net.load_state_dict(state_dict, strict=True)
+
+def get_train_and_test_modules(dataset: str):
+    """Helper function to create a model."""
+
+    spec = DATASETS[dataset]
+    backend = getattr(spec, "backend")
+    criterion = getattr(spec, "criterion")
+    isErrorMetric = getattr(spec, "isErrorMetric")
+
+    if backend == "regression":
+        from maidam.ml.models.regression import train, test
+
+    elif backend == "classification":
+        from maidam.ml.models.classification import train, test
+
+    elif backend == "tabular":
+        from maidam.ml.models.tabular import train, test
+    
+    elif backend == "detection":
+        from maidam.ml.models.detection import train, test
+
+    elif dataset in ["tabular-mimiciv"]:
+        from maidam.ml.models.tabular import train_h as train
+        from maidam.ml.models.tabular import test_h as test
+    else:
+        raise NotImplementedError(f"No backend defined for dataset {dataset}")
+    
+    return train, test, isErrorMetric, criterion
+
+def create_instantiate_parameters(dataset: str, model: str) -> nn.Module:
+    """
+    Create a model instance for the given dataset and model name.
+
+    Raises:
+        NotImplementedError: if dataset or model is unknown.
+    """
+    try:
+        spec = DATASETS[dataset]
+    except KeyError:
+        available = ", ".join(sorted(DATASETS))
+        raise NotImplementedError(f"Unknown dataset '{dataset}'. "
+                                  f"Available: {available}") from None
+
+    try:
+        factory = spec.models[model]
+    except KeyError:
+        available = ", ".join(sorted(spec.models))
+        raise NotImplementedError(f"Unfit model '{model}' for dataset '{dataset}'. "
+                                  f"Available for '{dataset}': {available}") from None
+
+    return factory(spec.num_features, spec.num_targets)
+
+
+def create_run_dir(config: UserConfig) -> tuple[Path, str]:
+    """Create a directory where to save results from this run."""
+    # Create output directory given current timestamp
+    current_time = datetime.now()
+    run_dir = current_time.strftime("%Y-%m-%d/%H-%M-%S")
+    # Save path is based on the current directory
+    save_path = Path.cwd() / f"outputs/{run_dir}"
+    save_path.mkdir(parents=True, exist_ok=False)
+
+    # Save run config as json
+    with open(f"{save_path}/run_config.json", "w", encoding="utf-8") as fp:
+        json.dump(config, fp)
+
+    return save_path, run_dir
+
+
+def custom_aggregate_metricrecords(
+    records: list[RecordDict], weighting_metric_name: str
+) -> MetricRecord:
+    """Perform weighted aggregation all MetricRecords using a specific key."""
+    # Retrieve weighting factor from MetricRecord
+    weights: list[float] = []
+    for record in records:
+        # Get the first (and only) MetricRecord in the record
+        metricrecord = next(iter(record.metric_records.values()))
+        # Because replies have been checked for consistency,
+        # we can safely cast the weighting factor to float
+        w = cast(float, metricrecord[weighting_metric_name])
+        weights.append(w)
+
+    # Average
+    total_weight = sum(weights)
+    weight_factors = [w / total_weight for w in weights]
+
+    aggregated_metrics = MetricRecord()
+    for record, weight in zip(records, weight_factors):
+        for record_item in record.metric_records.values():
+            # aggregate in-place
+            for key, value in record_item.items():
+                if key == weighting_metric_name:
+                    # We exclude the weighting key from the aggregated MetricRecord
+                    continue
+                if key not in aggregated_metrics:
+                    if isinstance(value, list): #Treat the list case
+                        aggregated_metrics[key] = [v * weight for v in value]
+                    else:
+                        aggregated_metrics[key] = value * weight #Treat the scalar case
+                else:
+                    if isinstance(value, list): #Treat the list case 
+                        current_list = cast(list[float], aggregated_metrics[key])
+                        aggregated_metrics[key] = [
+                            curr + val * weight
+                            for curr, val in zip(current_list, value)
+                        ]
+                    else:
+                        current_value = cast(float, aggregated_metrics[key]) #Accumulate treat the scalar case
+                        aggregated_metrics[key] = current_value + value * weight
+
+    # Variance
+    for record, weight in zip(records, weight_factors):
+        for record_item in record.metric_records.values():
+            for key, value in record_item.items():
+                if key == weighting_metric_name:
+                    continue
+                key_var_name = f'{key}_var'
+                
+                # 1. Calculate the squared difference (handles both scalar and list)
+                diff_sq = weight * (np.array(value) - np.array(aggregated_metrics[key]))**2
+
+                # 2. Update aggregated_metrics
+                if key_var_name not in aggregated_metrics:
+                    # Initialize: Remove the brackets [] to avoid the TypeError
+                    aggregated_metrics[key_var_name] = diff_sq.tolist() if isinstance(value, list) else float(diff_sq)
+                else:
+                    if isinstance(value, list):
+                        # Update list element-wise
+                        current_var_list = cast(list[float], aggregated_metrics[key_var_name])
+                        aggregated_metrics[key_var_name] = [curr + ds for curr, ds in zip(current_var_list, diff_sq)]
+                    else:
+                        # Update scalar
+                        current_var_val = cast(float, aggregated_metrics[key_var_name])
+                        aggregated_metrics[key_var_name] = current_var_val + float(diff_sq)
+
+            # # --- MIN computation (unweighted across clients) ---
+            # for key, value in record_item.items():
+            #     if key == weighting_metric_name:
+            #         continue
+
+            #     key_min_name = f"{key}_min"
+
+            #     if key_min_name not in aggregated_metrics:
+            #         aggregated_metrics[key_min_name] = value
+            #     else:
+            #         if isinstance(value, list):
+            #             current_min_list = cast(list[float], aggregated_metrics[key_min_name])
+            #             aggregated_metrics[key_min_name] = [
+            #                 min(curr, val) for curr, val in zip(current_min_list, value)
+            #             ]
+            #         else:
+            #             current_min_val = cast(float, aggregated_metrics[key_min_name])
+            #             aggregated_metrics[key_min_name] = min(current_min_val, value)
+
+
+    return aggregated_metrics
