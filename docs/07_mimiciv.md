@@ -1,5 +1,3 @@
-## TO PIERRE TO MODIFY a complete, pedagogical description on Mimic + how and what the data ingestion pipeline is doing. 
-
 # MIMIC-IV (v2.2) Preprocessing Pipeline
 
 Adapted from the official MIMIC-IV data pipeline:  
@@ -385,9 +383,9 @@ It prevents:
 
 ---
 
-# Citation
+<!-- # Citation
 
 If using this pipeline, cite:
 
 An Extensive Data Processing Pipeline for MIMIC-IV  
-Gupta et al., ML4H 2022.
+Gupta et al., ML4H 2022. -->
