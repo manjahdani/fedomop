@@ -1,0 +1,20 @@
+{
+  "Version": "2.2",
+  "RawDataPath": "mimic-IV/2.2/",
+  "PreprocessedDataPath": "data/output/",
+  "Task": "Length of Stay",
+  "LengthOfStay_greater_or_equal_threshold": 3,
+  "Include_ICU": false,
+  "Include_Diagnosis": true,
+  "Include_Procedures": true,
+  "Include_Medications": true,
+  "Include_chart_event": true,
+  "Include_output_event": true,
+  "Disease_Filter": "None",
+  "Outliers_management": "remove",
+  "Outliers_threshold_right": 98.0,
+  "Outliers_threshold_left": 0,
+  "Time_window_size": 24,
+  "Time_window_bucket_size": 1,
+  "Missing_values_management": "mean"
+}
