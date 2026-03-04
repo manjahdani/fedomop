@@ -1,6 +1,7 @@
 # Personalized Federated Framework with Flower & Docker for OMOP-CDM Multi-Hospital Data
 
 **Author:** Dani Manjah and Pierre Remacle
+
 **Last update:** 05/03/2026
 
 This repository documents how to run simulations and deploy stateful **Federated Learning (FL) experiments**

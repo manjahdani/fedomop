@@ -34,11 +34,10 @@ include=["maidam*"]
 [tool.flwr.app.config]
 num-server-rounds=30
 fraction-evaluate=1.0
-strategy="SPWF" # ["FedAvg", cifar10]
+strategy="FedAvg" # ["FedAvg"]
 dataset="mimiciv" # ["insilico", cifar10]
 partition_split = "Dirichlet"
 dataset_split_alpha=0.3
-pathological_cls=2
 model="MLP" # ["MLP", "LinearRegression", "CNN"]
 batch-size=32
 local-epochs=100
