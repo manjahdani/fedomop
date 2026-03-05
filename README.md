@@ -11,7 +11,7 @@ using **Flower** and **Docker Compose** in a distributed, multi-machine setup fo
 
 ## Documentation
 
-### Simulation 
+### MIMIC-IV 
 - [Overview](docs/07_mimiciv.md)
 
 ### Simulation 
@@ -32,3 +32,11 @@ using **Flower** and **Docker Compose** in a distributed, multi-machine setup fo
 
 This guide focuses on **deployment and operations**.
 It does **not** document FL algorithms or model internals.
+
+
+## License
+This project is open-source under the TBD License.
+
+## Funding
+This project was developed as part of the 
+"MAIDAM" BioWin project funded by the Walloon Region under grand agreement  PIT ATMP - Convention 8881.
