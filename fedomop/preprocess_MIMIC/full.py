@@ -26,15 +26,15 @@ seed_all(42)
  
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-path = "E:/mimic-pfed/FedOMOP/preprocess_MIMIC/fold/"
+path = "/export/home/manjah/mimic-pfed/FedOMOP/preprocess_MIMIC/fold/"
 print(f"Using {device}")
-with open( path +'X_train_fold_0_BIG.pkl', 'rb') as fp:
+with open( path +'X_train_fold_0_small.pkl', 'rb') as fp:
     X_train = pickle.load(fp)
-with open(path+'Y_train_fold_0_BIG.pkl', 'rb') as fp:
+with open(path+'Y_train_fold_0_small.pkl', 'rb') as fp:
     Y_train = pickle.load(fp)
-with open(path+'X_test_fold_0_BIG.pkl', 'rb') as fp:
+with open(path+'X_test_fold_0_small.pkl', 'rb') as fp:
     X_test = pickle.load(fp)
-with open(path+'Y_test_fold_0_BIG.pkl', 'rb') as fp:
+with open(path+'Y_test_fold_0_small.pkl', 'rb') as fp:
     Y_test = pickle.load(fp)
  
  
@@ -50,7 +50,7 @@ X_array = X_numeric.to_numpy(dtype=np.float32)
  
 print("X_shape", X_array.shape, "y_len", len(y_array))
  
- 
+
 fds = Dataset.from_dict({
     "features": X_array, # Keep as numpy
     "label": y_array,
@@ -58,7 +58,12 @@ fds = Dataset.from_dict({
 # Set format to torch so the DataLoader returns Tensors, not lists
 fds.set_format(type="torch", columns=["features", "label"])
  
-fds.save_to_disk("fds_O")
+fds.save_to_disk("fds_0")
+
+from datasets import load_from_disk
+fds = load_from_disk("/export/home/manjah/mimic-pfed/fds_0")
+fds.set_format(type="torch", columns=["features", "label"])
+
 class ResBlock(nn.Module):
     def __init__(self, dim, dropout):
         super().__init__()
@@ -204,22 +209,26 @@ trainl, vall = load_data(0, 1, 32, 1000, seed=42)
  
  
 # --- Train stats ---
-y_tr = trainl.dataset["label"]  # already a torch.Tensor
-n_tr = len(y_tr)
-n1_tr = (y_tr == 1).sum().item()
-n0_tr = (y_tr == 0).sum().item()
+
+# y_tr = trainl.dataset["label"]  # already a torch.Tensor
+# n_tr = len(y_tr)
+
+
+# n1_tr = (y_tr == 1).sum().item()
+# n0_tr = (y_tr == 0).sum().item()
  
-y_va = vall.dataset["label"]  # already a torch.Tensor
-n_va = len(y_va)
-n1_va = (y_va == 1).sum().item()
-n0_va = (y_va == 0).sum().item()
-print("Samples:", f"Train: {n_tr}", f"Validation: {n_va}")
-print(f"Train Readmissions (1): {n1_tr} ({100*n1_tr/n_tr:.2f}%)", f"Validation Readmissions (1): {n1_va} ({100*n1_va/n_va:.2f}%)")
-print(f"Train No Readmission (0): {n0_tr} ({100*n0_tr/n_tr:.2f}%)", f"Validation No Readmission (0): {n0_va} ({100*n0_va/n_va:.2f}%)")
+# y_va = vall.dataset["label"]  # already a torch.Tensor
+# n_va = len(y_va)
+# n1_va = (y_va == 1).sum().item()
+# n0_va = (y_va == 0).sum().item()
+# print("Samples:", f"Train: {n_tr}", f"Validation: {n_va}")
+# print(f"Train Readmissions (1): {n1_tr} ({100*n1_tr/n_tr:.2f}%)", f"Validation Readmissions (1): {n1_va} ({100*n1_va/n_va:.2f}%)")
+# print(f"Train No Readmission (0): {n0_tr} ({100*n0_tr/n_tr:.2f}%)", f"Validation No Readmission (0): {n0_va} ({100*n0_va/n_va:.2f}%)")
  
  
 model = FederatedResNet(input_dim=X_array.shape[1])
- 
+
+print(X_array.shape[1])
 epochs = 20
 print(f"\n Training Resnet for {epochs} epochs")
 train(model, trainl, epochs, 0.001, 0.9, 1e-4, device)

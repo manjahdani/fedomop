@@ -24,12 +24,12 @@ dependencies = [
 publisher = "UCLouvain-PILAB"
 
 [tool.flwr.app.components]
-serverapp = "FedOMOP.cfl.server_app:server_app"
-clientapp = "FedOMOP.cfl.client_app:client_app"
+serverapp = "FedOMOP.server_app:server_app"
+clientapp = "FedOMOP.client_app:client_app"
 
 [tool.setuptools.packages.find]
 where=["."]
-include=["fedom*"]
+include=["fedomop*"]
 
 [tool.flwr.app.config]
 num-server-rounds=30
