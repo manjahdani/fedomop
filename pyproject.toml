@@ -24,8 +24,8 @@ dependencies = [
 publisher = "UCLouvain-PILAB"
 
 [tool.flwr.app.components]
-serverapp = "maidam.entrypoints:server_app"
-clientapp = "maidam.entrypoints:client_app"
+serverapp = "FedOMOP.cfl.server_app:server_app"
+clientapp = "FedOMOP.cfl.client_app:client_app"
 
 [tool.setuptools.packages.find]
 where=["."]
