@@ -3,10 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["FedOMOP"]
+packages = ["fedomop"]
 
 [project]
-name = "FedOMOP"
+name = "fedomop"
 license = "Apache-2.0"
 version = "1.0.0"
 description = "Personalized Federated Framework for OMOP-CDM Multi-Hospital Data"
@@ -17,6 +17,7 @@ dependencies = [
     "flwr[simulation]>=1.26.1",
     "flwr-datasets[vision]>=0.6.0",
     "scikit-learn==1.7.2",
+    "omegaconf",
     "numpy"
 ]
 
@@ -24,25 +25,25 @@ dependencies = [
 publisher = "UCLouvain-PILAB"
 
 [tool.flwr.app.components]
-serverapp = "FedOMOP.server_app:server_app"
-clientapp = "FedOMOP.client_app:client_app"
+serverapp = "fedomop.server_app:app"
+clientapp = "fedomop.client_app:app"
 
 [tool.setuptools.packages.find]
 where=["."]
 include=["fedomop*"]
 
 [tool.flwr.app.config]
-num-server-rounds=30
-fraction-evaluate=1.0
-strategy="FedAvg"
-dataset="mimiciv"
+num-server-rounds = 30
+fraction-evaluate = 1.0
+strategy = "FedAvg"
+dataset = "mimiciv"
 partition_split = "Dirichlet"
-dataset_split_alpha=0.3
-model="MLP" # ["MLP", "LinearRegression", "CNN"]
-batch-size=32
-local-epochs=100
-lr=0.001
-weight_decay=0.0005
-momentum=0.9
-seed=0
-ditto_lambda=1.0
+dataset_split_alpha = 0.3
+model = "ResnetMimic"
+batch-size = 32
+local-epochs = 100
+lr = 0.001
+weight_decay = 0.0005
+momentum = 0.9
+seed = 0
+ditto_lambda = 1.0

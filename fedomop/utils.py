@@ -19,7 +19,7 @@ RESULTS_FILE = "result-{}.json"
 def config_json_file(n_nodes : int , run_config: dict) -> None:
     """Initialize the json file and write the run configurations."""
     # Initialize the execution results directory.
-    res_save_path = f"./results/{run_config["dataset"]}/{str(n_nodes)}_clients/{run_config["num-server-rounds"]}_rounds"
+    res_save_path = f"./results/{run_config['dataset']}/{str(n_nodes)}_clients/{run_config['num-server-rounds']}_rounds"
     if not os.path.exists(res_save_path):
         os.makedirs(res_save_path)
     res_save_name = time.strftime("%Y-%m-%d-%H-%M-%S")

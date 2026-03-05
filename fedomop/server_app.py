@@ -6,10 +6,10 @@ from flwr.serverapp.strategy import FedProx, FedAvg
 
 import torch
 
-from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, custom_aggregate_metricrecords, seed_all
-from FedOMOP.ml.metrics.utils import config_json_file, save_metrics_as_json
+from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, custom_aggregate_metricrecords, seed_all
+from fedomop.utils import config_json_file, save_metrics_as_json
 
-# Create ServerApp
+# Create Flower ServerApp
 app = ServerApp()
 
 @app.main()

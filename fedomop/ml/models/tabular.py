@@ -197,12 +197,12 @@ def _hospital_resnet(_f: int, _t: int):
     return FederatedResNet(input_dim=26, hidden_dim=128, n_blocks=3, dropout=0.5)
 
 def _hospital_resnet_split(_f: int, _t: int):
-    from FedOMOP.ml.models.tabular_decomposable import ResnetSplit
+    from fedomop.ml.models.tabular_decomposable import ResnetSplit
     return ResnetSplit(FederatedResNet(input_dim=26, hidden_dim=128, n_blocks=3, dropout=0.5))
 
 def _mimiciv_resnet(_f: int, _t: int):
-    return FederatedResNet(input_dim=12818, hidden_dim=128, n_blocks=3, dropout=0.5)
+    return FederatedResNet(input_dim=19656, hidden_dim=128, n_blocks=3, dropout=0.5)
 
 def _mimiciv_resnet_split(_f: int, _t: int):
-    from FedOMOP.ml.models.tabular_decomposable import ResnetSplit
-    return ResnetSplit(FederatedResNet(input_dim=12818, hidden_dim=128, n_blocks=3, dropout=0.5))
+    from fedomop.ml.models.tabular_decomposable import ResnetSplit
+    return ResnetSplit(FederatedResNet(input_dim=19656, hidden_dim=128, n_blocks=3, dropout=0.5))

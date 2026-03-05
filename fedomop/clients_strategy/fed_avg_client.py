@@ -1,7 +1,7 @@
 from flwr.app import ArrayRecord, Context, Message, MetricRecord
 import torch
 
-from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
+from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
 
 def train_fedavg(msg: Message, context: Context):
     """Train the model on local data."""

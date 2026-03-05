@@ -1,8 +1,8 @@
 from flwr.app import ArrayRecord, Context, Message, MetricRecord
 import torch
 
-from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders, get_weights
-from FedOMOP.ml.models.helpers import load_model_from_state, save_model_from_to_state
+from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders, get_weights
+from fedomop.ml.models.helpers import load_model_from_state, save_model_from_to_state
 
 def train_ditto(msg: Message, context: Context):
     """Train the model on local data."""

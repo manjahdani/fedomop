@@ -5,8 +5,8 @@ from flwr.app import Context, Message
 from flwr.common.logger import log
 import torch
 
-from FedOMOP.ml.fl_common.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
-from FedOMOP.ml.models.helpers import save_model_from_to_state, load_model_from_state
+from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
+from fedomop.ml.models.helpers import save_model_from_to_state, load_model_from_state
 
 personal_model_name = "personal_net"
 def nn_model_training(net, dataset, model_cls, context: Context):

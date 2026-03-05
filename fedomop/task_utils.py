@@ -25,12 +25,9 @@ from flwr.common import (
     log,
 )
 
-
-from FedOMOP.ml.models.tabular import (_hospital_resnet, 
-                                      _hospital_resnet_split, 
-                                      _mimiciv_resnet,
-                                     _mimiciv_resnet_split)
-
+from fedomop.ml.datasets.hospital_dataset_utils import load_data_mimiiv
+from fedomop.ml.models.tabular import (_mimiciv_resnet, _mimiciv_resnet_split)
+from fedomop.ml.models.tabular_decomposable import ResnetManager
 
 
 def seed_all(seed: int) -> None:
@@ -75,35 +72,14 @@ def _build_manager(model_name : str,
                    valloader: DataLoader, 
                    device: str):
     
-    """Return the appropriate ModelManager instance based on run_config['model']."""
 
-    from FedOMOP.ml.models.tabular_decomposable import ResnetManager
 
     
-    registry = {}
-
-    registry["ResnetSplit"] = lambda: ResnetManager(
-            client_id=client_id,
-            trainloader=trainloader,
-            valloader=valloader,
-            input_dim= 26,
-            device=device,
-        )
-    registry["ResnetSplitMimic"] = lambda: ResnetManager(
-            client_id=client_id,
-            trainloader=trainloader,
-            valloader=valloader,
-            input_dim= 12818,
-            device=device,
-        )
-    if model_name not in registry:
-        available = ", ".join(sorted(registry))
-        raise NotImplementedError(
-            f"FedPer client: unknown decomposable model '{model_name}'. "
-            f"Available managers: {available}"
-        )
-
-    return registry[model_name]()
+    
+    return ResnetManager(client_id=client_id, 
+                         trainloader=trainloader, 
+                         valloader=valloader, 
+                         input_dim= 12818,device=device)
 
 
 
@@ -116,13 +92,8 @@ def _get_dataloaders(dataset: str,
                      partition_split: str, 
                      dataset_split_alpha: float):
     
-    if dataset == "hospital":
-        from FedOMOP.ml.datasets.hospital_dataset_utils import load_data, build_global_preprocessor
-        preprocessor, num_cols, cat_cols = build_global_preprocessor()
-        return load_data(partition_id, preprocessor, num_cols, cat_cols)
-
-    elif dataset == "mimiciv":
-        from FedOMOP.ml.datasets.hospital_dataset_utils import load_data_mimiiv
+    if dataset == "mimiciv":
+        
         return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
     
     else:
@@ -131,22 +102,11 @@ def _get_dataloaders(dataset: str,
 
 
 DATASETS: Dict[str, DatasetSpec] = {
-    "hospital": DatasetSpec(
-        features=None,
-        targets= None,
-        criterion="auroc",
-        backend = "tabular",
-        isErrorMetric = False,
-        models={
-            "Resnet": _hospital_resnet,
-            "ResnetSplit": _hospital_resnet_split
-        },
-    ),
     "mimiciv": DatasetSpec(
         features=None,
         targets= None,
         criterion="auroc",
-        backend = "tabular-mimiciv",
+        backend = "tabular",
         isErrorMetric = False,
         models={
             "ResnetMimic": _mimiciv_resnet,
@@ -171,11 +131,9 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from FedOMOP.ml.models.tabular import train, test
-
-    elif dataset in ["tabular-mimiciv"]:
-        from FedOMOP.ml.models.tabular import train_h as train
-        from FedOMOP.ml.models.tabular import test_h as test
+        from fedomop.ml.models.tabular import train_h as train
+        from fedomop.ml.models.tabular import test_h as test
+        
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")
     
