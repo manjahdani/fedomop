@@ -23,7 +23,7 @@ services:
 
   superexec-serverapp:
     build:
-      context: ${PROJECT_DIR:-.}
+      context: ../..
       dockerfile_inline: |
         FROM flwr/superexec:${FLWR_VERSION:-1.26.1}
 

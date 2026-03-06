@@ -27,8 +27,7 @@ def nn_model_training(net, dataset, model_cls, context: Context):
                                     seed, 
                                     context.run_config["partition_split"], 
                                     context.run_config["dataset_split_alpha"])
-
-    net.to(device)
+    
     
     trainining_metrics = train_fn(
         net,
@@ -39,6 +38,30 @@ def nn_model_training(net, dataset, model_cls, context: Context):
         context.run_config["weight_decay"],
         device)
     return trainining_metrics
+
+
+def eval_self(net, context : Context):
+    
+    dataset = context.run_config["dataset"]
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+    batch_size = context.run_config["batch-size"]
+    seed = context.run_config["seed"]
+
+    # Load the model and initialize it with the received weights
+    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    _, valloader = _get_dataloaders(dataset, 
+                                    partition_id, 
+                                    num_partitions, 
+                                    batch_size, 
+                                    seed, 
+                                    context.run_config["partition_split"], 
+                                    context.run_config["dataset_split_alpha"])
+
+    _, test_fn, _, _ = get_train_and_test_modules(dataset)
+
+    return test_fn(net, valloader, device)
 
 def train_self(msg: Message, context: Context):
     """Train the model on local data."""
