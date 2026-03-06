@@ -8,10 +8,8 @@ fds.set_format(type="torch", columns=["features", "label"])
 # Create global split once and store it
 fds = fds.train_test_split(test_size=0.3, seed=42)
 
-
 def get_mimic_features():
     return fds["train"][0]["features"]
-
 
 def load_global_data_mimic():
     

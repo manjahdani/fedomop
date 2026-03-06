@@ -34,7 +34,7 @@ where=["."]
 include=["fedomop*"]
 
 [tool.flwr.app.config]
-num-server-rounds = 30
+num-server-rounds = 10
 fraction-evaluate = 1.0
 strategy = "FedAvg"
 dataset = "mimiciv"
@@ -42,9 +42,8 @@ partition_split = "Dirichlet"
 dataset_split_alpha = 1.0
 model = "ResMLP"
 batch-size = 32
-local-epochs = 100
+local-epochs = 10
 lr = 0.001
 weight_decay = 0.0005
 momentum = 0.9
 seed = 0
-ditto_lambda = 1.0

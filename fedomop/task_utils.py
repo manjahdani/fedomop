@@ -1,37 +1,23 @@
 from __future__ import annotations
-
-from pathlib import Path
-import os, random
-import numpy as np
-import torch
-
-import torch.nn as nn
-from dataclasses import dataclass
-from typing import Callable, Dict, Tuple, cast
 from collections import OrderedDict
-from flwr.common.typing import UserConfig
-import json
-import datetime
-from logging import INFO
-
-
-import numpy as np
+from dataclasses import dataclass
+import os, random
+from typing import Callable, Dict, Tuple, cast
 
 from flwr.common import (
     MetricRecord,
     RecordDict,
-    log,
 )
+import numpy as np
+import torch
+import torch.nn as nn
 
 from fedomop.dataset import load_local_data_mimic, load_global_data_mimic, get_mimic_features
 from fedomop.model import create_resmlp
 
 
 def seed_all(seed: int) -> None:
-    # To ensure  
-
     os.environ["PYTHONHASHSEED"] = str(seed)
-    # Ensure deterministic cuBLAS (PyTorch docs)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # or ":16:8" for smaller
     random.seed(seed)
     np.random.seed(seed)
@@ -120,10 +106,8 @@ def get_train_and_test_modules(dataset: str):
 
 
 def load_centralized_data(dataset:str):
-
     if dataset == "mimiciv":
         return load_global_data_mimic()
-    ### STEP 3 to ADD YOUR DATASET
     else:
         raise NotImplementedError(f"No method for {dataset}")
 
