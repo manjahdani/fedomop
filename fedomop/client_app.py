@@ -2,50 +2,28 @@ import os
 from flwr.client import ClientApp
 from flwr.common import Context
 from logging import Formatter, FileHandler
-import torch
+
 from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 from logging import INFO, WARNING
 from flwr.common.logger import log
 from collections.abc import Iterable
 from typing import Callable, Optional, Tuple
-from fedomop.clients_strategy.fed_avg_client import train_fedavg, eval_fedavg
-from fedomop.clients_strategy.fed_per_client import train_fedper, eval_fedper
-from fedomop.clients_strategy.ditto_client import train_ditto, eval_ditto
 from fedomop.task_utils import seed_all
+from flwr.app import ArrayRecord, Context, Message, MetricRecord
+import torch
+from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, _get_dataloaders
 
 # Flower ClientApp
 app = ClientApp()
 
-TrainHandler = Callable[[Message, Context], Tuple[ArrayRecord, MetricRecord]]
-EvaluateHandler =  Callable[[Message, Context], Tuple[ArrayRecord, MetricRecord]]
-
-
-TRAIN_HANDLERS: dict[str, TrainHandler] = {
-    "FedAvg": train_fedavg,
-    "FedPer": train_fedper,
-    "Ditto" : train_ditto,
-    # "cfl": train_cfl,
-}
-
-EVALUATE_HANDLERS: dict[str, TrainHandler] = {
-    "FedAvg": eval_fedavg,
-    "FedPer": eval_fedper,
-    "Ditto" : eval_ditto,
-    # "cfl": train_cfl,
-}
 
 @app.train()
 def train(msg: Message, context: Context):
     
     seed_all(context.run_config["seed"])
     
-    strategy = context.run_config["strategy"]
-    handler = TRAIN_HANDLERS.get(strategy)
-    if handler is None:
-        raise ValueError(f"Unknown strategy '{strategy}'. Available: {list(TRAIN_HANDLERS.keys())}")
-
-    model_weights, metric_dict = handler(msg, context)
+    model_weights, metric_dict = train_fedavg(msg, context)
 
     # Construct and return reply Message
     model_record = ArrayRecord(model_weights)
@@ -59,18 +37,75 @@ def train(msg: Message, context: Context):
 @app.evaluate()
 def evaluate(msg: Message, context: Context):
     """Evaluate the model on local data."""
-
     seed_all(context.run_config["seed"])
     
-    strategy = context.run_config["strategy"]
-    handler = EVALUATE_HANDLERS.get(strategy)
-    if handler is None:
-        raise ValueError(f"Unknown strategy '{strategy}'. Available: {list(EVALUATE_HANDLERS.keys())}")
-
-    metrics = handler(msg,context)
-    
+    metrics = eval_fedavg(msg,context)
     metric_record = MetricRecord(metrics)
-
-
     content = RecordDict({"metrics": metric_record})
     return Message(content=content, reply_to=msg)
+
+
+def train_fedavg(msg: Message, context: Context):
+    """Train the model on local data."""
+    # Load the data
+    dataset = context.run_config["dataset"]
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+    batch_size = context.run_config["batch-size"]
+    seed = context.run_config["seed"]
+    model_cls = context.run_config["model"]
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    train_fn, _, _, _ = get_train_and_test_modules(dataset)
+
+    trainloader, _ = _get_dataloaders(dataset, 
+                                      partition_id, 
+                                      num_partitions, 
+                                      batch_size, 
+                                      seed, 
+                                      context.run_config["partition_split"], 
+                                      context.run_config["dataset_split_alpha"])
+
+    # Load the model and initialize it with the received weights
+    model = create_instantiate_parameters(dataset, model_cls)
+    model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
+    
+    
+    # Train model
+    train_metrics = train_fn(
+            model,
+            trainloader,
+            context.run_config["local-epochs"],
+            msg.content["config"]["lr"],
+            context.run_config["momentum"],
+            context.run_config["weight_decay"],
+            device,
+        )
+    return model.state_dict(), train_metrics 
+
+
+def eval_fedavg(msg: Message, context: Context):
+    """Evaluate the model on local data."""
+
+    dataset = context.run_config["dataset"]
+    partition_id = context.node_config["partition-id"]
+    num_partitions = context.node_config["num-partitions"]
+    batch_size = context.run_config["batch-size"]
+    seed = context.run_config["seed"]
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model_cls = context.run_config["model"]
+    _,test_fn,_, _ = get_train_and_test_modules(dataset)
+    
+    #Load Model 
+    model = create_instantiate_parameters(dataset, model_cls) 
+    model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
+    
+
+    _, valloader = _get_dataloaders(dataset, 
+                                    partition_id, 
+                                    num_partitions, 
+                                    batch_size, 
+                                    seed, 
+                                    context.run_config["partition_split"], 
+                                    context.run_config["dataset_split_alpha"])
+
+    return test_fn(model, valloader, device)

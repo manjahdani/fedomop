@@ -19,15 +19,13 @@ from logging import INFO
 import numpy as np
 
 from flwr.common import (
-    ConfigRecord,
     MetricRecord,
     RecordDict,
     log,
 )
 
 from fedomop.mimic_load import load_data_mimiiv, load_global_mimiiv
-from fedomop.models.tabular import _mimiciv_resnet, _mimiciv_resnet_split
-from fedomop.models.tabular_decomposable import ResnetManager
+from fedomop.tabular import _mimiciv_resnet, _mimiciv_resnet_split
 
 
 def seed_all(seed: int) -> None:
@@ -64,24 +62,22 @@ class DatasetSpec:
     def num_targets(self) -> int:
         return 0 if self.targets is None else len(self.targets)
 
-# ---------- manager factory ----------
-def _build_manager(model_name : str, 
-                   client_id : int, 
-                   dataset : str, 
-                   trainloader: DataLoader, 
-                   valloader: DataLoader, 
-                   device: str):
-    
 
 
-    
-    
-    return ResnetManager(client_id=client_id, 
-                         trainloader=trainloader, 
-                         valloader=valloader, 
-                         input_dim= 12818,device=device)
-
-
+DATASETS: Dict[str, DatasetSpec] = {
+    "mimiciv": DatasetSpec(
+        features=None,
+        targets= None,
+        criterion="auroc",
+        backend = "tabular",
+        isErrorMetric = False,
+        models={
+            "ResnetMimic": _mimiciv_resnet,
+            "ResnetSplitMimic": _mimiciv_resnet_split
+        },
+    ),
+    # STEP 1 TO ADD OWN DATA
+    }
 
 
 
@@ -98,26 +94,11 @@ def _get_dataloaders(dataset: str,
                      dataset_split_alpha: float):
     
     if dataset == "mimiciv":
-        
         return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
-    
+    ### STEP 2 to ADD YOUR DATASET
     else:
         raise NotImplementedError(f"No method for {dataset}")
 
-
-
-DATASETS: Dict[str, DatasetSpec] = {
-    "mimiciv": DatasetSpec(
-        features=None,
-        targets= None,
-        criterion="auroc",
-        backend = "tabular",
-        isErrorMetric = False,
-        models={
-            "ResnetMimic": _mimiciv_resnet,
-            "ResnetSplitMimic": _mimiciv_resnet_split
-        },
-    ),}
 
 def get_weights(net):
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
@@ -136,8 +117,8 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from fedomop.models.tabular import train
-        from fedomop.models.tabular import test
+        from fedomop.tabular import train
+        from fedomop.tabular import test
 
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")

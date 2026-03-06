@@ -4,29 +4,18 @@ from datasets import load_from_disk
 
 fds = load_from_disk("/export/home/manjah/mimic-pfed/fds_0")
 fds.set_format(type="torch", columns=["features", "label"])
+# Create global split once and store it
+fds = fds.train_test_split(test_size=0.3, seed=42)
 
-
-
-def load_global_mimiiv(batch_size: int, seed : int):
+def load_global_mimiiv():
     
-    # Divide data on each node: 80% train, 20% validation
-    partition_train_val = fds.train_test_split(test_size=0.2, seed=seed)
-    
-    train_ds = partition_train_val["train"]
-    val_ds  = partition_train_val["test"]
+    test_fds = fds["test"]
+    test_fds.set_format(type="torch", columns=["features", "label"])
+    testloader = DataLoader(test_fds, 
+                             batch_size=32, #Hardcoded
+                             shuffle=False)
 
-    train_ds.set_format(type="torch", columns=["features", "label"])
-    val_ds.set_format(type="torch", columns=["features", "label"])
-
-    trainloader = DataLoader(train_ds, 
-                             batch_size=batch_size, 
-                             shuffle=True)
-    
-    valloader  = DataLoader(val_ds,  
-                            batch_size=batch_size, 
-                            shuffle=False)
-
-    return trainloader, valloader
+    return testloader
 
 def load_data_mimiiv(partition_id: int, num_partitions: int, batch_size: int, dataset_split_arg, seed : int):
     
@@ -34,11 +23,11 @@ def load_data_mimiiv(partition_id: int, num_partitions: int, batch_size: int, da
                     num_partitions=num_partitions,
                     partition_by="label",
                     alpha=dataset_split_arg,
-                    min_partition_size=1000,
+                    min_partition_size=750,
                     self_balancing=True,
                     seed=seed)
     
-    partitioner.dataset = fds
+    partitioner.dataset = fds["train"]
 
     client_dataset = partitioner.load_partition(partition_id)
 

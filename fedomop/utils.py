@@ -58,15 +58,15 @@ def save_metrics_as_json(save_path: str, result: Result) -> None:
         json.dump(payload, fp, indent=2)
 
 
-def write_round_res(new_res: Dict[str, float]) -> None:
-    """Load the json file, append result and re-write json collection."""
-    with open(RESULTS_FILE, "r", encoding="UTF-8") as fin:
-        data = json.load(fin)
-    data["round_res"].append(new_res)
+# def write_round_res(new_res: Dict[str, float]) -> None:
+#     """Load the json file, append result and re-write json collection."""
+#     with open(RESULTS_FILE, "r", encoding="UTF-8") as fin:
+#         data = json.load(fin)
+#     data["round_res"].append(new_res)
 
-    # Write the updated data back to the JSON file
-    with open(RESULTS_FILE, "w", encoding="UTF-8") as fout:
-        json.dump(data, fout, indent=4)
+#     # Write the updated data back to the JSON file
+#     with open(RESULTS_FILE, "w", encoding="UTF-8") as fout:
+#         json.dump(data, fout, indent=4)
 
 
 def write_sim_res(run_config: Dict[str, Any], results: Dict[str, Any], file_path: str = "sim_results.csv") -> None:
@@ -78,7 +78,7 @@ def write_sim_res(run_config: Dict[str, Any], results: Dict[str, Any], file_path
     """
     p = Path(file_path)
     header = ["timestamp"] + list(run_config.keys()) + list(results.keys())
-    row = {"timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z", **run_config, **results}
+    row = {"timestamp": datetime.now().isoformat(timespec="seconds") + "Z", **run_config, **results}
 
     if not p.exists():
         p.parent.mkdir(parents=True, exist_ok=True)
