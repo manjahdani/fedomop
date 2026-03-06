@@ -1,15 +1,4 @@
-import pandas as pd 
-import os 
-import numpy as np
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from torch.utils.data import TensorDataset, DataLoader
-import torch
-
+from torch.utils.data import DataLoader
 from flwr_datasets.partitioner import DirichletPartitioner
 from datasets import load_from_disk
 
@@ -17,13 +6,35 @@ fds = load_from_disk("/export/home/manjah/mimic-pfed/fds_0")
 fds.set_format(type="torch", columns=["features", "label"])
 
 
+
+def load_global_mimiiv(batch_size: int, seed : int):
+    
+    # Divide data on each node: 80% train, 20% validation
+    partition_train_val = fds.train_test_split(test_size=0.2, seed=seed)
+    
+    train_ds = partition_train_val["train"]
+    val_ds  = partition_train_val["test"]
+
+    train_ds.set_format(type="torch", columns=["features", "label"])
+    val_ds.set_format(type="torch", columns=["features", "label"])
+
+    trainloader = DataLoader(train_ds, 
+                             batch_size=batch_size, 
+                             shuffle=True)
+    
+    valloader  = DataLoader(val_ds,  
+                            batch_size=batch_size, 
+                            shuffle=False)
+
+    return trainloader, valloader
+
 def load_data_mimiiv(partition_id: int, num_partitions: int, batch_size: int, dataset_split_arg, seed : int):
     
     partitioner = DirichletPartitioner(
                     num_partitions=num_partitions,
                     partition_by="label",
                     alpha=dataset_split_arg,
-                    min_partition_size=100,
+                    min_partition_size=1000,
                     self_balancing=True,
                     seed=seed)
     
@@ -31,8 +42,6 @@ def load_data_mimiiv(partition_id: int, num_partitions: int, batch_size: int, da
 
     client_dataset = partitioner.load_partition(partition_id)
 
-
-    
     # Divide data on each node: 80% train, 20% validation
     partition_train_val = client_dataset.train_test_split(test_size=0.2, seed=seed)
     

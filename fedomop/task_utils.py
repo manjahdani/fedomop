@@ -25,7 +25,7 @@ from flwr.common import (
     log,
 )
 
-from fedomop.ml.datasets.hospital_dataset_utils import load_data_mimiiv
+from fedomop.mimic_load import load_data_mimiiv, load_global_mimiiv
 from fedomop.ml.models.tabular import (_mimiciv_resnet, _mimiciv_resnet_split)
 from fedomop.ml.models.tabular_decomposable import ResnetManager
 
@@ -84,6 +84,11 @@ def _build_manager(model_name : str,
 
 
 
+
+def load_centralized_dataset(batch_size: int, seed: int):
+    return load_global_mimiiv(batch_size, seed)
+
+
 def _get_dataloaders(dataset: str, 
                      partition_id: int, 
                      num_partitions: int, 
@@ -131,9 +136,9 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from fedomop.ml.models.tabular import train_h as train
-        from fedomop.ml.models.tabular import test_h as test
-        
+        from fedomop.ml.models.tabular import train
+        from fedomop.ml.models.tabular import test
+
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")
     

@@ -10,7 +10,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 
 from fedomop.ml.models.decomposable import ModelManager, ModelSplit
-from fedomop.ml.models.tabular import FederatedResNet, train, test, train_h, test_h
+from fedomop.ml.models.tabular import FederatedResNet, train, test
 
 
 # -------------------- Body/Head split --------------------
