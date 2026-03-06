@@ -39,11 +39,11 @@ class ResMLP(nn.Module):
         features = self.body(x)
         return self.head(features)
 
-def train(net, trainloader, epochs, lr, momentum, weight_decay, device, reg_params=None, lamda=0.0):
+def train(net, trainloader, epochs, lr, weight_decay, device):
     net.to(device)
     
     # 1. BCE is standard for binary clinical tasks
-    criterion = nn.BCEWithLogitsLoss().to(device)
+    criterion = nn.BCEWithLogitsLoss(reduction="sum").to(device)
     optimizer = torch.optim.AdamW(net.parameters(), 
                                   lr=lr,
                                   weight_decay=weight_decay)
@@ -56,17 +56,10 @@ def train(net, trainloader, epochs, lr, momentum, weight_decay, device, reg_para
         for batch in trainloader:
             x = batch["features"].to(device)
             y = batch["label"].to(device).float().unsqueeze(1) # Reshape for BCE (N, 1)
-            optimizer.zero_grad()
             
-            # 3. Single forward pass
+            optimizer.zero_grad()
             logits = net(x)
             loss = criterion(logits, y)
-
-            if reg_params is not None and lamda > 0:
-                proximal_term = 0.0
-                for local_p, global_p in zip(net.parameters(), reg_params):
-                    proximal_term += (local_p - global_p).pow(2).sum()
-                loss += (lamda / 2) * proximal_term
 
             loss.backward()
             optimizer.step()
@@ -117,11 +110,11 @@ def test(net, testloader, device):
     accuracy = (preds == y_true).mean()
 
     metrics = {
-        "num-examples": len(testloader.dataset),
         "loss": float(loss),
         "accuracy": float(accuracy),
-        "auroc": auroc,  # mAP for testing data
-        "auprc": auprc,  # mAP for testing data
+        "auroc": float(auroc),
+        "auprc": float(auprc),
+        "num-examples": len(testloader.dataset),
     }
     return metrics
 

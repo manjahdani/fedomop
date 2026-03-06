@@ -67,10 +67,9 @@ def train_fedavg(msg: Message, context: Context):
     train_metrics = train_fn(
             model,
             trainloader,
-            context.run_config["local-epochs"],
+            msg.content["config"]["epochs"],
             msg.content["config"]["lr"],
-            context.run_config["momentum"],
-            context.run_config["weight_decay"],
+            msg.content["config"]["weight_decay"],
             device,
         )
     return model.state_dict(), train_metrics 

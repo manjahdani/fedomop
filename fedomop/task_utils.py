@@ -134,10 +134,6 @@ def create_instantiate_parameters(dataset: str, model: str) -> nn.Module:
 
     return factory(spec.num_features, spec.num_targets)
 
-
-
-
-
 def custom_aggregate_metricrecords(
     records: list[RecordDict], weighting_metric_name: str
 ) -> MetricRecord:

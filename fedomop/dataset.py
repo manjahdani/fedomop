@@ -12,7 +12,6 @@ def get_mimic_features():
     return fds["train"][0]["features"]
 
 def load_global_data_mimic():
-    
     test_fds = fds["test"]
     test_fds.set_format(type="torch", columns=["features", "label"])
     testloader = DataLoader(test_fds, 
@@ -21,7 +20,6 @@ def load_global_data_mimic():
     return testloader
 
 def load_local_data_mimic(partition_id: int, num_partitions: int, batch_size: int, dataset_split_arg, seed : int):
-    
     partitioner = DirichletPartitioner(
                     num_partitions=num_partitions,
                     partition_by="label",
@@ -31,7 +29,6 @@ def load_local_data_mimic(partition_id: int, num_partitions: int, batch_size: in
                     seed=seed)
     
     partitioner.dataset = fds["train"]
-
     client_dataset = partitioner.load_partition(partition_id)
 
     # Divide data on each node: 80% train, 20% validation
