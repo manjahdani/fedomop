@@ -2,7 +2,7 @@
 from flwr.app import ArrayRecord, Context, Message, MetricRecord
 import torch
 
-from fedomop.ml.models.helpers import save_layer_weights_to_state, load_layer_weights_from_state
+from fedomop.models.helpers import save_layer_weights_to_state, load_layer_weights_from_state
 from fedomop.task_utils import _build_manager, _get_dataloaders
 
 

@@ -26,8 +26,8 @@ from flwr.common import (
 )
 
 from fedomop.mimic_load import load_data_mimiiv, load_global_mimiiv
-from fedomop.ml.models.tabular import (_mimiciv_resnet, _mimiciv_resnet_split)
-from fedomop.ml.models.tabular_decomposable import ResnetManager
+from fedomop.models.tabular import _mimiciv_resnet, _mimiciv_resnet_split
+from fedomop.models.tabular_decomposable import ResnetManager
 
 
 def seed_all(seed: int) -> None:
@@ -136,8 +136,8 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from fedomop.ml.models.tabular import train
-        from fedomop.ml.models.tabular import test
+        from fedomop.models.tabular import train
+        from fedomop.models.tabular import test
 
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")

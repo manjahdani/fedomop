@@ -24,6 +24,7 @@ dependencies = [
 [tool.flwr.app]
 publisher = "UCLouvain-PILAB"
 
+
 [tool.flwr.app.components]
 serverapp = "fedomop.server_app:app"
 clientapp = "fedomop.client_app:app"

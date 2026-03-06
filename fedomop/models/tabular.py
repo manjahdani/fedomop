@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import roc_auc_score, average_precision_score
 import numpy as np
-from tqdm.auto import tqdm
 
 class ResBlock(nn.Module):
     def __init__(self, dim, dropout):
