@@ -10,7 +10,7 @@ name = "fedomop"
 license = "Apache-2.0"
 version = "1.0.0"
 description = "Personalized Federated Framework for OMOP-CDM Multi-Hospital Data"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "torch==2.7.1",
     "torchvision==0.22.1",
@@ -40,7 +40,7 @@ strategy = "FedAvg"
 dataset = "mimiciv"
 partition_split = "Dirichlet"
 dataset_split_alpha = 1.0
-model = "ResnetMimic"
+model = "ResMLP"
 batch-size = 32
 local-epochs = 100
 lr = 0.001

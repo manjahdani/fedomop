@@ -6,9 +6,14 @@ from flwr.serverapp.strategy import FedAvg
 
 import torch
 
-from fedomop.task_utils import create_instantiate_parameters, get_train_and_test_modules, custom_aggregate_metricrecords, seed_all
-from fedomop.utils import config_json_file, save_metrics_as_json
-from fedomop.mimic_load import load_global_mimiiv
+from fedomop.task_utils import (create_instantiate_parameters, 
+                                get_train_and_test_modules, 
+                                custom_aggregate_metricrecords,
+                                load_centralized_data,
+                                seed_all,)
+
+from fedomop.log_utils import config_json_file, save_metrics_as_json
+
 # Create Flower ServerApp
 app = ServerApp()
 
@@ -18,7 +23,8 @@ def main(grid: Grid, context: Context) -> None:
     
     seed_all(context.run_config["seed"])
     
-    res_save_path = config_json_file(len(grid.get_node_ids()), context.run_config)
+    res_save_path = config_json_file(len(grid.get_node_ids()), 
+                                     context.run_config)
     
     # Read run config
     fraction_evaluate: float = context.run_config["fraction-evaluate"]
@@ -27,9 +33,7 @@ def main(grid: Grid, context: Context) -> None:
     model_cls = context.run_config["model"]
 
     # Load the model and initialize it with the received weights
-    
-    
-    # Load global model
+
     global_model = create_instantiate_parameters(dataset, model_cls)
     arrays = ArrayRecord(global_model.state_dict())
 
@@ -61,7 +65,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
 
     
     dataset = "mimiciv" #HARDCODED FOR APP
-    model_cls = "ResnetMimic" #HARDCODED FOR APP
+    model_cls = "ResMLP" #HARDCODED FOR APP
     # Load the model and initialize it with the received weights
     model = create_instantiate_parameters(dataset, model_cls)
     model.load_state_dict(arrays.to_torch_state_dict())
@@ -69,7 +73,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
     model.to(device)
 
     # Load entire test set
-    test_dataloader = load_global_mimiiv()
+    test_dataloader = load_centralized_data(dataset)
     
     _, eval_fn, _, _ =  get_train_and_test_modules(dataset)
     # Evaluate the global model on the test set

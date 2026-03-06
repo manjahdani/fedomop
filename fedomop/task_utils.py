@@ -6,7 +6,6 @@ import numpy as np
 import torch
 
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from dataclasses import dataclass
 from typing import Callable, Dict, Tuple, cast
 from collections import OrderedDict
@@ -24,8 +23,8 @@ from flwr.common import (
     log,
 )
 
-from fedomop.mimic_load import load_data_mimiiv, load_global_mimiiv
-from fedomop.tabular import _mimiciv_resnet, _mimiciv_resnet_split
+from fedomop.dataset import load_local_data_mimic, load_global_data_mimic, get_mimic_features
+from fedomop.model import create_resmlp
 
 
 def seed_all(seed: int) -> None:
@@ -66,35 +65,29 @@ class DatasetSpec:
 
 DATASETS: Dict[str, DatasetSpec] = {
     "mimiciv": DatasetSpec(
-        features=None,
+        features= get_mimic_features(),
         targets= None,
         criterion="auroc",
         backend = "tabular",
         isErrorMetric = False,
         models={
-            "ResnetMimic": _mimiciv_resnet,
-            "ResnetSplitMimic": _mimiciv_resnet_split
+            "ResMLP": create_resmlp,
         },
     ),
     # STEP 1 TO ADD OWN DATA
     }
 
 
-
-def load_centralized_dataset(batch_size: int, seed: int):
-    return load_global_mimiiv(batch_size, seed)
-
-
-def _get_dataloaders(dataset: str, 
-                     partition_id: int, 
-                     num_partitions: int, 
-                     batch_size: int, 
-                     seed: int, 
-                     partition_split: str, 
-                     dataset_split_alpha: float):
+def get_dataloaders(dataset: str, 
+                    partition_id: int, 
+                    num_partitions: int, 
+                    batch_size: int, 
+                    seed: int, 
+                    partition_split: str, 
+                    dataset_split_alpha: float):
     
     if dataset == "mimiciv":
-        return load_data_mimiiv(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
+        return load_local_data_mimic(partition_id, num_partitions, batch_size, dataset_split_alpha, seed)
     ### STEP 2 to ADD YOUR DATASET
     else:
         raise NotImplementedError(f"No method for {dataset}")
@@ -117,13 +110,22 @@ def get_train_and_test_modules(dataset: str):
     isErrorMetric = getattr(spec, "isErrorMetric")
 
     if backend == "tabular":
-        from fedomop.tabular import train
-        from fedomop.tabular import test
+        from fedomop.model import train
+        from fedomop.model import test
 
     else:
         raise NotImplementedError(f"No backend defined for dataset {dataset}")
     
     return train, test, isErrorMetric, criterion
+
+
+def load_centralized_data(dataset:str):
+
+    if dataset == "mimiciv":
+        return load_global_data_mimic()
+    ### STEP 3 to ADD YOUR DATASET
+    else:
+        raise NotImplementedError(f"No method for {dataset}")
 
 def create_instantiate_parameters(dataset: str, model: str) -> nn.Module:
     """
@@ -149,20 +151,7 @@ def create_instantiate_parameters(dataset: str, model: str) -> nn.Module:
     return factory(spec.num_features, spec.num_targets)
 
 
-def create_run_dir(config: UserConfig) -> tuple[Path, str]:
-    """Create a directory where to save results from this run."""
-    # Create output directory given current timestamp
-    current_time = datetime.now()
-    run_dir = current_time.strftime("%Y-%m-%d/%H-%M-%S")
-    # Save path is based on the current directory
-    save_path = Path.cwd() / f"outputs/{run_dir}"
-    save_path.mkdir(parents=True, exist_ok=False)
 
-    # Save run config as json
-    with open(f"{save_path}/run_config.json", "w", encoding="utf-8") as fp:
-        json.dump(config, fp)
-
-    return save_path, run_dir
 
 
 def custom_aggregate_metricrecords(

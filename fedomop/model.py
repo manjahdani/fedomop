@@ -1,9 +1,8 @@
-
-
+import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.metrics import roc_auc_score, average_precision_score
-import numpy as np
+
 
 class ResBlock(nn.Module):
     def __init__(self, dim, dropout):
@@ -19,8 +18,8 @@ class ResBlock(nn.Module):
     def forward(self, x):
         return x + self.block(x) # The Skip Connection
 
-class FederatedResNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim=128, n_blocks=3, dropout=0.3):
+class ResMLP(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim=128, n_blocks=3, dropout=0.3):
         super().__init__()
         
         # --- SHARED BODY ---
@@ -42,6 +41,7 @@ class FederatedResNet(nn.Module):
 
 def train(net, trainloader, epochs, lr, momentum, weight_decay, device, reg_params=None, lamda=0.0):
     net.to(device)
+    
     # 1. BCE is standard for binary clinical tasks
     criterion = nn.BCEWithLogitsLoss().to(device)
     optimizer = torch.optim.AdamW(net.parameters(), 
@@ -116,7 +116,6 @@ def test(net, testloader, device):
     preds = (y_probs > 0.5).astype(int)
     accuracy = (preds == y_true).mean()
 
-
     metrics = {
         "num-examples": len(testloader.dataset),
         "loss": float(loss),
@@ -127,9 +126,5 @@ def test(net, testloader, device):
     return metrics
 
 
-def _mimiciv_resnet(_f: int, _t: int):
-    return FederatedResNet(input_dim=19656, hidden_dim=128, n_blocks=3, dropout=0.5)
-
-def _mimiciv_resnet_split(_f: int, _t: int):
-    from fedomop.ml.models.tabular_decomposable import ResnetSplit
-    return ResnetSplit(FederatedResNet(input_dim=19656, hidden_dim=128, n_blocks=3, dropout=0.5))
+def create_resmlp(f: int, t: int):
+    return ResMLP(input_dim= f, output_dim = t, hidden_dim=128, n_blocks=3, dropout=0.5,)
