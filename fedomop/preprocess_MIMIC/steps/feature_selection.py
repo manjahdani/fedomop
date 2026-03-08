@@ -31,7 +31,6 @@ def feature_icu(cohort_output, version_path, diag_flag=True,out_flag=True,chart_
     if diag_flag:
         print("[EXTRACTING DIAGNOSIS DATA]")
         diag = preproc_icd_module("./"+version_path+"/hosp/diagnoses_icd.csv.gz", './data/cohort/'+cohort_output+'.csv.gz', './utils/mappings/ICD9_to_ICD10_mapping.txt', map_code_colname='diagnosis_code')
-        print(diag)
         diag[['subject_id', 'hadm_id', 'stay_id', 'icd_code','root_icd10_convert','root']].to_csv("./data/features/preproc_diag_icu.csv.gz", compression='gzip', index=False)
         print("[SUCCESSFULLY SAVED DIAGNOSIS DATA]")
     
@@ -44,7 +43,6 @@ def feature_icu(cohort_output, version_path, diag_flag=True,out_flag=True,chart_
     if chart_flag:
         print("[EXTRACTING CHART EVENTS DATA]")
         chart=preproc_chart("./"+version_path+"/icu/chartevents.csv.gz", './data/cohort/'+cohort_output+'.csv.gz', 'charttime', dtypes=None, usecols=['stay_id','charttime','itemid','valuenum','valueuom'])
-        print(chart)
         chart = drop_wrong_uom(chart, 0.95)
         chart[['stay_id', 'itemid','event_time_from_admit','valuenum']].to_csv("./data/features/preproc_chart_icu.csv.gz", compression='gzip', index=False)
         print("[SUCCESSFULLY SAVED CHART EVENTS DATA]")
@@ -66,13 +64,10 @@ def preprocess_features_icu(cohort_output, diag_flag, group_diag,chart_flag,clea
         print("[PROCESSING DIAGNOSIS DATA]")
         diag = pd.read_csv("./data/features/preproc_diag_icu.csv.gz", compression='gzip',header=0)
         if(group_diag=='Keep both ICD-9 and ICD-10 codes'):
-            print("ah")
             diag['new_icd_code']=diag['icd_code']
         if(group_diag=='Convert ICD-9 to ICD-10 codes'):
-            print("ah")
             diag['new_icd_code']=diag['root_icd10_convert']
         if(group_diag=='Convert ICD-9 to ICD-10 and group ICD-10 codes'):
-            print("ah")
             diag['new_icd_code']=diag['root']
 
         diag=diag[['subject_id', 'hadm_id', 'stay_id', 'new_icd_code']].dropna()

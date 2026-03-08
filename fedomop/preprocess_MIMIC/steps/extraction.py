@@ -100,7 +100,7 @@ def validate_row(row, ctrl, invalid, max_year, disch_col, valid_col, gap):
     To be invalid, the end of the prediction window's year must both extend beyond the maximum seen year
     for a patient AND beyond the year that corresponds to the 2017-2019 anchor year range for a patient"""
     print("disch_col",row[disch_col])
-    print(gap)
+    #print(gap)
     pred_year = (row[disch_col] + gap).year
     if max_year < pred_year and pred_year > row[valid_col]:
         invalid = invalid.append(row)

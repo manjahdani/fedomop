@@ -43,7 +43,7 @@ class PrepocessConfig(SavableConfig):
     PreprocessedDataPath : str
         The path to save the preprocessed data, e.g. "data/output"
     Task : str
-        The prediction task to preprocess for, e.g. "mortality", "LengthOfStay", "readmission", "phenotype"
+        The prediction task to preprocess for, e.g. "Mortality", "Length Of Stay", "Readmission", "Phenotype"
     Include_ICU : bool
         Whether to include ICU stays in the dataset
     Include_Diagnosis : bool
@@ -54,8 +54,12 @@ class PrepocessConfig(SavableConfig):
         Whether to include medication codes in the dataset
     Include_chart_event : bool
         Whether to include chart events in the dataset
+        if ICU is included -> chart event include both vitals and labs
+        if ICU is not included -> chart event include only labs (vitals are only recorded in the ICU)
     Include_output_event : bool
         Whether to include output events in the dataset
+        if ICU is included -> output event include both output events and chart events (vitals and labs)
+        if ICU is not included -> output event not included (output events are only recorded in the ICU)
     Include_HF_patients : bool
         Whether to include patients with heart failure in the dataset
     Include_COPD_patients : bool
@@ -112,6 +116,9 @@ class PrepocessConfig(SavableConfig):
     Time_window_bucket_size: int = 1  # in hours, e.g. 1 for hourly buckets 
 
     Missing_values_management: str = "mean"  # mean, median, mode, random, none 
+
+    Oversampling: bool = True 
+    Concatenate: bool = True
 
     def save_to_json(self, path: str | None = None):
         """Saves this config at `path` if provided, else in the same place as `self.out_path`"""

@@ -59,8 +59,8 @@ class Generator():
         data['dischtime'] = pd.to_datetime(data['dischtime'])
         data['los']=pd.to_timedelta(data['dischtime']-data['admittime'],unit='h')
         data['los']=data['los'].astype(str)
-        data[['days', 'dummy','hours']] = data['los'].str.split(' ', -1, expand=True)
-        data[['hours','min','sec']] = data['hours'].str.split(':', -1, expand=True)
+        data[['days', 'dummy', 'hours']] = data['los'].str.split(' ', expand=True)
+        data[['hours', 'min', 'sec']] = data['hours'].str.split(':', expand=True)
         data['los']=pd.to_numeric(data['days'])*24+pd.to_numeric(data['hours'])
         data=data.drop(columns=['days', 'dummy','hours','min','sec'])
         data=data[data['los']>0]
@@ -76,8 +76,8 @@ class Generator():
     def generate_proc(self):
         proc=pd.read_csv("./data/features/preproc_proc.csv.gz", compression='gzip', header=0, index_col=None)
         proc=proc[proc['hadm_id'].isin(self.data['hadm_id'])]
-        proc[['start_days', 'dummy','start_hours']] = proc['proc_time_from_admit'].str.split(' ', -1, expand=True)
-        proc[['start_hours','min','sec']] = proc['start_hours'].str.split(':', -1, expand=True)
+        proc[['start_days', 'dummy','start_hours']] = proc['proc_time_from_admit'].str.split(' ', expand=True)
+        proc[['start_hours','min','sec']] = proc['start_hours'].str.split(':', expand=True)
         proc['start_time']=pd.to_numeric(proc['start_days'])*24+pd.to_numeric(proc['start_hours'])
         proc=proc.drop(columns=['start_days', 'dummy','start_hours','min','sec'])
         proc=proc[proc['start_time']>=0]
@@ -95,8 +95,8 @@ class Generator():
         final=pd.DataFrame()
         for labs in tqdm(pd.read_csv("./data/features/preproc_labs.csv.gz", compression='gzip', header=0, index_col=None,chunksize=chunksize)):
             labs=labs[labs['hadm_id'].isin(self.data['hadm_id'])]
-            labs[['start_days', 'dummy','start_hours']] = labs['lab_time_from_admit'].str.split(' ', -1, expand=True)
-            labs[['start_hours','min','sec']] = labs['start_hours'].str.split(':', -1, expand=True)
+            labs[['start_days', 'dummy','start_hours']] = labs['lab_time_from_admit'].str.split(' ', expand=True)
+            labs[['start_hours','min','sec']] = labs['start_hours'].str.split(':', expand=True)
             labs['start_time']=pd.to_numeric(labs['start_days'])*24+pd.to_numeric(labs['start_hours'])
             labs=labs.drop(columns=['start_days', 'dummy','start_hours','min','sec'])
             labs=labs[labs['start_time']>=0]
@@ -110,17 +110,17 @@ class Generator():
             if final.empty:
                 final=labs
             else:
-                final=final.append(labs, ignore_index=True)
+                final = pd.concat([final, labs], ignore_index=True)
 
         self.labs=final
         
     def generate_meds(self):
         meds=pd.read_csv("./data/features/preproc_med.csv.gz", compression='gzip', header=0, index_col=None)
-        meds[['start_days', 'dummy','start_hours']] = meds['start_hours_from_admit'].str.split(' ', -1, expand=True)
-        meds[['start_hours','min','sec']] = meds['start_hours'].str.split(':', -1, expand=True)
+        meds[['start_days', 'dummy','start_hours']] = meds['start_hours_from_admit'].str.split(' ', expand=True)
+        meds[['start_hours','min','sec']] = meds['start_hours'].str.split(':', expand=True)
         meds['start_time']=pd.to_numeric(meds['start_days'])*24+pd.to_numeric(meds['start_hours'])
-        meds[['start_days', 'dummy','start_hours']] = meds['stop_hours_from_admit'].str.split(' ', -1, expand=True)
-        meds[['start_hours','min','sec']] = meds['start_hours'].str.split(':', -1, expand=True)
+        meds[['start_days', 'dummy','start_hours']] = meds['stop_hours_from_admit'].str.split(' ', expand=True)
+        meds[['start_hours','min','sec']] = meds['start_hours'].str.split(':', expand=True)
         meds['stop_time']=pd.to_numeric(meds['start_days'])*24+pd.to_numeric(meds['start_hours'])
         meds=meds.drop(columns=['start_days', 'dummy','start_hours','min','sec'])
         #####Sanity check
@@ -259,7 +259,7 @@ class Generator():
                 if final_meds.empty:
                     final_meds=sub_meds
                 else:
-                    final_meds=final_meds.append(sub_meds)
+                    final_meds= pd.concat([final_meds, sub_meds], ignore_index=True)
             
             ###PROC
              if(self.feat_proc):
@@ -269,7 +269,7 @@ class Generator():
                 if final_proc.empty:
                     final_proc=sub_proc
                 else:    
-                    final_proc=final_proc.append(sub_proc)
+                    final_proc= pd.concat([final_proc , sub_proc], ignore_index=True)
                     
             ###LABS
              if(self.feat_lab):
@@ -279,7 +279,7 @@ class Generator():
                 if final_labs.empty:
                     final_labs=sub_labs
                 else:    
-                    final_labs=final_labs.append(sub_labs)
+                    final_labs= pd.concat([final_labs , sub_labs], ignore_index=True)
             
              t=t+1
         los=int(self.los/bucket)
@@ -319,8 +319,8 @@ class Generator():
             #print(grp['gender'])
             #print(int(grp['Age']))
             #print(grp['ethnicity'].iloc[0])
-            dataDic[hid]={'Cond':{},'Proc':{},'Med':{},'Lab':{},'ethnicity':grp['ethnicity'].iloc[0],'age':int(grp['Age']),'gender':grp['gender'].iloc[0],'label':int(grp['label'])}
-            labels_csv.loc[labels_csv['hadm_id']==hid,'label']=int(grp['label'])
+            dataDic[hid]={'Cond':{},'Proc':{},'Med':{},'Lab':{},'ethnicity':grp['ethnicity'].iloc[0],'age':int(grp['Age'].iloc[0]),'gender':grp['gender'].iloc[0],'label':int(grp['label'].iloc[0])}
+            labels_csv.loc[labels_csv['hadm_id']==hid,'label']=int(grp['label'].iloc[0])
         for hid in tqdm(self.hids):
             grp=self.data[self.data['hadm_id']==hid]
             demo_csv=grp[['Age','gender','ethnicity','insurance']]
@@ -353,7 +353,7 @@ class Generator():
                     val=val.ffill()
                     val=val.fillna(-1)
                     #print(df2.head())
-                    df2.iloc[:,0:]=df2.iloc[:,0:].sub(df2.index,0)
+                    df2 = df2.sub(df2.index, axis=0)
                     df2[df2>0]=1
                     df2[df2<0]=0
                     val.iloc[:,0:]=df2.iloc[:,0:]*val.iloc[:,0:]
