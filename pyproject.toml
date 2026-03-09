@@ -8,7 +8,7 @@ packages = ["fedomop"]
 [project]
 name = "fedomop"
 license = "Apache-2.0"
-version = "1.0.0"
+version = "0.1.0"
 description = "Personalized Federated Framework for OMOP-CDM Multi-Hospital Data"
 requires-python = ">=3.10"
 dependencies = [
@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [tool.flwr.app]
-publisher = "UCLouvain-PILAB"
+publisher = "danimanjah"
 
 
 [tool.flwr.app.components]
@@ -38,7 +38,7 @@ num-server-rounds = 10
 fraction-evaluate = 1.0
 strategy = "FedAvg"
 dataset = "mimiciv"
-partition_split = "Dirichlet"
+partitioner = "iid" # supporter ["iid","dirichlet"]
 dataset_split_alpha = 1.0
 model = "ResMLP"
 batch-size = 32

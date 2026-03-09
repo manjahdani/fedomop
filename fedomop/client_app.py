@@ -55,7 +55,7 @@ def train_fedavg(msg: Message, context: Context):
                                      num_partitions, 
                                      batch_size, 
                                      seed, 
-                                     context.run_config["partition_split"], 
+                                     context.run_config["partitioner"], 
                                      context.run_config["dataset_split_alpha"])
 
     # Load the model and initialize it with the received weights
@@ -97,7 +97,7 @@ def eval_fedavg(msg: Message, context: Context):
                                     num_partitions, 
                                     batch_size, 
                                     seed, 
-                                    context.run_config["partition_split"], 
+                                    context.run_config["partitioner"], 
                                     context.run_config["dataset_split_alpha"])
 
     return test_fn(model, valloader, device)

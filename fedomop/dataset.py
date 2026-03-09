@@ -1,12 +1,10 @@
 from datasets import load_from_disk
-from flwr_datasets.partitioner import DirichletPartitioner
 from torch.utils.data import DataLoader
-
-
+from flwr_datasets.partitioner import DirichletPartitioner, IidPartitioner
+ 
 fds = load_from_disk("/export/home/manjah/mimic-pfed/fds_0")
-fds.set_format(type="torch", columns=["features", "label"])
-# Create global split once and store it
 fds = fds.train_test_split(test_size=0.3, seed=42)
+fds.set_format(type="torch", columns=["features", "label"])
 
 def get_mimic_features():
     return fds["train"][0]["features"]
@@ -19,15 +17,21 @@ def load_global_data_mimic():
                              shuffle=False)
     return testloader
 
-def load_local_data_mimic(partition_id: int, num_partitions: int, batch_size: int, dataset_split_arg, seed : int):
-    partitioner = DirichletPartitioner(
-                    num_partitions=num_partitions,
-                    partition_by="label",
-                    alpha=dataset_split_arg,
-                    min_partition_size=750,
-                    self_balancing=True,
-                    seed=seed)
+def load_local_data_mimic(partition_id: int, num_partitions: int, 
+                          batch_size: int, partitioner_strat = "iid", dataset_split_arg = None, seed = 42):
+    # 
     
+    if partitioner_strat== "iid":
+        partitioner = IidPartitioner(num_partitions=num_partitions)
+    elif partitioner_strat == "dirichlet":
+        partitioner = DirichletPartitioner(num_partitions = num_partitions,
+                                           partition_by = "label",
+                                           alpha = dataset_split_arg,
+                                           min_partition_size = 750,
+                                           self_balancing = True,
+                                           seed = seed)
+
+
     partitioner.dataset = fds["train"]
     client_dataset = partitioner.load_partition(partition_id)
 
