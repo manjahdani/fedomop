@@ -3,16 +3,11 @@
 **Author:** Dani Manjah and Pierre Remacle
 
 **Last update:** 07/03/2026
-
-This repository documents how to run simulations and deploy **Federated Learning (FL) experiments**
-using **Flower** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data.
 ---
 
-
-
-
-
-## Documentation
+## About
+This repository documents how to run simulations and deploy **Federated Learning (FL) experiments**
+using **Flower** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data. The use case of readmission within 30 days is taken as an illustrative example. 
 ---
 > **Note**  
 > This repository uses a simplified demonstration dataset.  
@@ -56,7 +51,7 @@ The same overall pipeline can be adapted to other tasks such as:
 
 ---
 
-## Dataset Access
+### Dataset Access
 
 Before downloading the data, access must be approved through the official **PhysioNet** data use agreement.
 
@@ -69,7 +64,7 @@ https://physionet.org
 
 ---
 
-## Run the Data Pipeline
+### Run the Data Pipeline
 
 For the readmission pipeline, use the `base_config` defined in the code:
 
@@ -86,7 +81,7 @@ For more details about the data pipeline and outputs, see:
 
 ## Running Experiments
 
-## 1. Simulation Mode
+### 1. Simulation Mode
 
 Simulation is the default mode in this repository.
 
@@ -102,7 +97,7 @@ This will:
 - train the federated model
 - log metrics
 
-### Simulation configuration
+#### Simulation configuration
 
 The `local-simulation` runtime is defined in the Flower configuration file:
 
@@ -119,7 +114,7 @@ options.num-supernodes = 3
 
 This runs the simulation locally with **3 virtual SuperNodes (clients)**.
 
-### Custom simulation parameters
+#### Custom simulation parameters
 
 You can override parameters defined in `pyproject.toml` with `--run-config`:
 
@@ -129,19 +124,19 @@ flwr run . --run-config='partitioner="dirichlet" num-server-rounds=50 local-epoc
 
 ---
 
-## 2. Deployment Mode
+### 2. Deployment Mode
 
 Deployment mode simulates a real multi-hospital distributed setup.
 
 For each link and node, start a dedicated terminal.
 
-### Step 1 — Start the SuperLink
+#### Step 1 — Start the SuperLink
 
 ```bash
 flower-superlink --insecure
 ```
 
-### Step 2 — Start the SuperNodes
+#### Step 2 — Start the SuperNodes
 
 Example with 3 hospitals:
 
@@ -166,7 +161,7 @@ flower-supernode --insecure \
     --node-config "partition-id=2 num-partitions=3"
 ```
 
-### Step 3 — Launch the federated run
+#### Step 3 — Launch the federated run
 
 ```bash
 flwr run . local-deployment --stream
@@ -182,7 +177,7 @@ insecure = true
 
 ---
 
-## Metrics
+## Metrics and Outputs
 
 The framework reports both **centralized** and **distributed** metrics per round, including:
 - loss
@@ -194,8 +189,7 @@ It also tracks summary statistics across clients, including:
 - variance
 - minimum
 
-Simulation results are automatically saved in the `results/` directory.
-
+Simulation results are automatically saved in the `results/` directory. And the final model is uploaded as .pt
 ---
 
 ## License
