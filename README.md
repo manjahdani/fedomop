@@ -8,7 +8,8 @@
 ## About
 
 This repository documents how to run simulations and deploy **Federated Learning (FL) experiments**
-using **Flower** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data. The use case of readmission within 30 days is taken as an illustrative example. 
+using **Flower** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data. The use case of readmission within 30 days is taken as an illustrative example.
+ 
 ---
 > **Note**  
 > This repository uses a simplified demonstration dataset.  
