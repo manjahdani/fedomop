@@ -5,6 +5,7 @@ def compute_outlier_imputation(arr, cut_off,left_thresh,impute):
     perc_up = np.percentile(arr, left_thresh)
     perc_down = np.percentile(arr, cut_off)
     #print(perc_up,perc_down)
+    length_start=arr.shape[0]
     if impute:
         arr[arr < perc_up] = perc_up
         arr[arr > perc_down] = perc_down
@@ -12,6 +13,10 @@ def compute_outlier_imputation(arr, cut_off,left_thresh,impute):
         #print(arr[arr < perc_up].shape,arr[arr > perc_down].shape)
         arr[arr < perc_up] = np.nan
         arr[arr > perc_down] = np.nan
+    length_end=arr.shape[0]
+    print(length_start)
+    print(length_end)
+    print(length_start-length_end)
     return arr
 
 
@@ -24,7 +29,7 @@ def outlier_imputation(data, id_attribute, value_attribute, cut_off,left_thresh,
         #print(values.max(),values.min(),values.mean())
         index = values.index
         values = compute_outlier_imputation(values, cut_off,left_thresh,impute)
-        data[value_attribute].iloc[index] = values
+        data.loc[index, value_attribute] = values
     data=data.dropna(subset=[value_attribute])
     #print(data.shape)
     return data

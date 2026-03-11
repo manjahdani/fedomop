@@ -313,6 +313,7 @@ class Generator():
         labels_csv=pd.DataFrame(columns=['hadm_id','label'])
         labels_csv['hadm_id']=pd.Series(self.hids)
         labels_csv['label']=0
+        labels_csv.to_csv('./data/csv/labels.csv', index=False)
         for hid in self.hids:
             grp=self.data[self.data['hadm_id']==hid]
             #print(grp.head())

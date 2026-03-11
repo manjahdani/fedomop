@@ -436,172 +436,243 @@ class Generator():
         with open("./data/dict/metaDic", 'wb') as fp:
             pickle.dump(metaDic, fp)
             
+            
+    def create_Dict(self,meds,proc,out,chart,los):
+        dataDic={}
+        print(los)
+        labels_csv=pd.DataFrame(columns=['stay_id','label'])
+        labels_csv['stay_id']=pd.Series(self.hids)
+        labels_csv['label']=0
+#         print("# Unique gender",self.data.gender.nunique())
+#         print("# Unique ethnicity",self.data.ethnicity.nunique())
+#         print("# Unique insurance",self.data.insurance.nunique())
 
-    def create_Dict(self, meds, proc, out, chart, los, chunk_size=5000):
-        dataDic = {}
-        time_index = pd.Index(range(los))
-        
-        # File Paths
-        csv_dir = "./data/csv"
-        os.makedirs(csv_dir, exist_ok=True)
-        dyn_path = os.path.join(csv_dir, "all_dynamic.csv")
-        demo_path = os.path.join(csv_dir, "all_demo.csv")
-        static_path = os.path.join(csv_dir, "all_static.csv")
-        label_path = os.path.join(csv_dir, "labels.csv") # Path for labels
+        for hid in self.hids:
+            grp=self.data[self.data['stay_id']==hid]
+            dataDic[hid]={'Cond':{},'Proc':{},'Med':{},'Out':{},'Chart':{},'ethnicity':grp['ethnicity'].iloc[0],'age':int(grp['Age'].iloc[0]),'gender':grp['gender'].iloc[0],'label':int(grp['label'].iloc[0])}
+            labels_csv.loc[labels_csv['stay_id']==hid,'label']=int(grp['label'].iloc[0])
+            
 
-        # Clear existing files to prevent appending to old data
-        for p in [dyn_path, demo_path, static_path, label_path]:
-            if os.path.exists(p): os.remove(p)
-
-        # Temporary storage for the current chunk
-        chunk_demo, chunk_dyn, chunk_static = [], [], []
-        
-        print("Saving labels.csv...")
-        # Extract stay_id and label from the main data cohort
-        labels_df = self.data[['stay_id', 'label']].drop_duplicates()
-        labels_df.to_csv(label_path, index=False)
-        
-        # 1. Pre-grouping (The key for speed)
-        print("Pre-grouping large dataframes...")
-        med_groups = dict(tuple(meds.groupby("stay_id"))) if self.feat_med else {}
-        proc_groups = dict(tuple(proc.groupby("stay_id"))) if self.feat_proc else {}
-        out_groups = dict(tuple(out.groupby("stay_id"))) if self.feat_out else {}
-        chart_groups = dict(tuple(chart.groupby("stay_id"))) if self.feat_chart else {}
-        cond_groups = dict(tuple(self.cond.groupby("stay_id"))) if self.feat_cond else {}
-        data_groups = dict(tuple(self.data.groupby("stay_id")))
-
-        med_feat = meds['itemid'].unique() if self.feat_med else []
-        proc_feat = proc['itemid'].unique() if self.feat_proc else []
-        out_feat = out['itemid'].unique() if self.feat_out else []
-        chart_feat = chart['itemid'].unique() if self.feat_chart else []
-        cond_feat = self.cond['new_icd_code'].unique() if self.feat_cond else []
-
-        def flush_to_disk(data_list, path):
-            if not data_list: return
-            df = pd.concat(data_list)
-            # Write header only if file doesn't exist
-            is_new = not os.path.exists(path)
-            df.to_csv(path, mode='a', index=False, header=is_new)
-            data_list.clear()
-
-        print(f"Processing {len(self.hids)} patients...")
-        for i, hid in enumerate(tqdm(self.hids)):
-            grp = data_groups.get(hid)
-            if grp is None: continue
-
-            # Populate dataDic (keep in memory for pickle)
-            dataDic[hid] = {
-                'Cond': {}, 'Proc': {}, 'Med': {}, 'Out': {}, 'Chart': {},
-                'ethnicity': grp['ethnicity'].iloc[0],
-                'age': int(grp['Age'].iloc[0]),
-                'gender': grp['gender'].iloc[0],
-                'label': int(grp['label'].iloc[0])
-            }
-
-            # --- DEMO ---
-            d_df = grp[['Age', 'gender', 'ethnicity', 'insurance']].copy()
-            d_df['stay_id'] = hid
-            chunk_demo.append(d_df)
-
-            # --- DYNAMIC ---
-            p_dyn = []
-            # MEDS Logic
-            if self.feat_med:
-                m = med_groups.get(hid)
-                if m is None:
-                    amt = pd.DataFrame(np.zeros((los, len(med_feat))), columns=med_feat)
+            #print(static_csv.head())
+        for hid in tqdm(self.hids):
+            grp=self.data[self.data['stay_id']==hid]
+            demo_csv=grp[['Age','gender','ethnicity','insurance']]
+            if not os.path.exists("./data/csv/"+str(hid)):
+                os.makedirs("./data/csv/"+str(hid))
+            demo_csv.to_csv('./data/csv/'+str(hid)+'/demo.csv',index=False)
+            
+            dyn_csv=pd.DataFrame()
+            ###MEDS
+            if(self.feat_med):
+                feat=meds['itemid'].unique()
+                df2=meds[meds['stay_id']==hid]
+                if df2.shape[0]==0:
+                    amount=pd.DataFrame(np.zeros([los,len(feat)]),columns=feat)
+                    amount=amount.fillna(0)
+                    amount.columns=pd.MultiIndex.from_product([["MEDS"], amount.columns])
                 else:
-                    rt = m.pivot_table(index='start_time', columns='itemid', values='rate').reindex(time_index).ffill().fillna(-1)
-                    am = m.pivot_table(index='start_time', columns='itemid', values='amount').reindex(time_index).ffill().fillna(-1)
-                    st = m.pivot_table(index='start_time', columns='itemid', values='stop_time').reindex(time_index).ffill().fillna(0)
-                    
-                    sig = (st.sub(st.index, axis=0) > 0).astype(int)
-                    dataDic[hid]['Med'] = {'signal': sig.to_dict("list"), 'rate': (sig*rt).to_dict("list"), 'amount': (sig*am).to_dict("list")}
-                    amt = (sig*am).reindex(columns=med_feat, fill_value=0)
-                amt.columns = pd.MultiIndex.from_product([["MEDS"], amt.columns])
-                p_dyn.append(amt)
+                    rate=df2.pivot_table(index='start_time',columns='itemid',values='rate')
+                    #print(rate)
+                    amount=df2.pivot_table(index='start_time',columns='itemid',values='amount')
+                    df2=df2.pivot_table(index='start_time',columns='itemid',values='stop_time')
+                    #print(df2.shape)
+                    add_indices = pd.Index(range(los)).difference(df2.index)
+                    add_df = pd.DataFrame(index=add_indices, columns=df2.columns).fillna(np.nan)
+                    df2=pd.concat([df2, add_df])
+                    df2=df2.sort_index()
+                    df2=df2.ffill()
+                    df2=df2.fillna(0)
 
-            # PROC & OUT Logic
-            for feat_flag, g_dict, lbl, f_list in [(self.feat_proc, proc_groups, "PROC", proc_feat), (self.feat_out, out_groups, "OUT", out_feat)]:
-                if feat_flag:
-                    d2 = g_dict.get(hid)
-                    if d2 is None:
-                        res = pd.DataFrame(np.zeros((los, len(f_list))), columns=f_list)
-                    else:
-                        d2 = d2.copy(); d2['val'] = 1
-                        res = d2.pivot_table(index='start_time', columns='itemid', values='val').reindex(time_index).fillna(0)
-                        res = (res > 0).astype(int)
-                        dataDic[hid][lbl.capitalize()] = res.to_dict("list")
-                        res = res.reindex(columns=f_list, fill_value=0)
-                    res.columns = pd.MultiIndex.from_product([[lbl], res.columns])
-                    p_dyn.append(res)
+                    rate=pd.concat([rate, add_df])
+                    rate=rate.sort_index()
+                    rate=rate.ffill()
+                    rate=rate.fillna(-1)
 
-            # --- CHART Logic (Updated Fix) ---
-            if self.feat_chart:
-                c = chart_groups.get(hid)
-                if c is None:
-                    v = pd.DataFrame(np.zeros((los, len(chart_feat))), columns=chart_feat)
-                else:
-                    # 1. Ensure the dataframe columns are flat
-                    if isinstance(c.columns, pd.MultiIndex):
-                        c.columns = c.columns.get_level_values(-1)
+                    amount=pd.concat([amount, add_df])
+                    amount=amount.sort_index()
+                    amount=amount.ffill()
+                    amount=amount.fillna(-1)
+                    #print(df2.head())
+                    df2.iloc[:,0:]=df2.iloc[:,0:].sub(df2.index,0)
+                    df2[df2>0]=1
+                    df2[df2<0]=0
+                    rate.iloc[:,0:]=df2.iloc[:,0:]*rate.iloc[:,0:]
+                    amount.iloc[:,0:]=df2.iloc[:,0:]*amount.iloc[:,0:]
+                    #print(df2.head())
+                    dataDic[hid]['Med']['signal']=df2.iloc[:,0:].to_dict(orient="list")
+                    dataDic[hid]['Med']['rate']=rate.iloc[:,0:].to_dict(orient="list")
+                    dataDic[hid]['Med']['amount']=amount.iloc[:,0:].to_dict(orient="list")
 
-                    # 2. Perform the pivots with explicit column selection
-                    # Using values='valuenum' and index/columns ensures a 2D result
-                    v = c.pivot_table(index='start_time', columns='itemid', values='valuenum').reindex(time_index)
-                    
-                    # This was the line crashing:
-                    # We create a 'present' column to make the signal pivot simpler
-                    temp_c = c.copy()
-                    temp_c['present'] = 1
-                    s = temp_c.pivot_table(index='start_time', columns='itemid', values='present').reindex(time_index).notnull().astype(int)
 
-                    if self.impute == "Mean": 
-                        v = v.ffill().bfill().fillna(v.mean())
-                    elif self.impute == "Median": 
-                        v = v.ffill().bfill().fillna(v.median())
-                    
-                    v = v.fillna(0)
-                    dataDic[hid]['Chart'] = {'signal': s.to_dict("list"), 'val': v.to_dict("list")}
-                    v = v.reindex(columns=chart_feat, fill_value=0)
+                    feat_df=pd.DataFrame(columns=list(set(feat)-set(amount.columns)))
+    #                 print(feat)
+    #                 print(amount.columns)
+    #                 print(amount.head())
+                    amount=pd.concat([amount,feat_df],axis=1)
+
+                    amount=amount[feat]
+                    amount=amount.fillna(0)
+    #                 print(amount.columns)
+                    amount.columns=pd.MultiIndex.from_product([["MEDS"], amount.columns])
                 
-                v.columns = pd.MultiIndex.from_product([["CHART"], v.columns])
-                p_dyn.append(v)
-            if p_dyn:
-                # Join Meds, Procs, Outs, and Chart horizontally
-                patient_dynamic_df = pd.concat(p_dyn, axis=1)
-                # Add stay_id so we can filter/load it later
-                patient_dynamic_df[('stay_id', 'stay_id')] = hid
-                chunk_dyn.append(patient_dynamic_df)
-
-            # --- STATIC (COND) ---
-            if self.feat_cond:
-                cg = cond_groups.get(hid)
-                if cg is None:
-                    dataDic[hid]['Cond'] = {'fids': ['<PAD>']}
-                    stc = pd.DataFrame(np.zeros((1, len(cond_feat))), columns=cond_feat)
+                if(dyn_csv.empty):
+                    dyn_csv=amount
                 else:
-                    dataDic[hid]['Cond'] = {'fids': list(cg['new_icd_code'])}
-                    cg = cg.copy(); cg['val'] = 1
-                    stc = cg.drop_duplicates().pivot(index='stay_id', columns='new_icd_code', values='val').reindex(columns=cond_feat, fill_value=0)
-                stc.columns = pd.MultiIndex.from_product([["COND"], stc.columns])
-                stc['stay_id'] = hid
-                chunk_static.append(stc)
+                    dyn_csv=pd.concat([dyn_csv,amount],axis=1)
+                
+                
+                
+            
+            
+            ###PROCS
+            if(self.feat_proc):
+                feat=proc['itemid'].unique()
+                df2=proc[proc['stay_id']==hid]
+                if df2.shape[0]==0:
+                    df2=pd.DataFrame(np.zeros([los,len(feat)]),columns=feat)
+                    df2=df2.fillna(0)
+                    df2.columns=pd.MultiIndex.from_product([["PROC"], df2.columns])
+                else:
+                    df2['val']=1
+                    #print(df2)
+                    df2=df2.pivot_table(index='start_time',columns='itemid',values='val')
+                    #print(df2.shape)
+                    add_indices = pd.Index(range(los)).difference(df2.index)
+                    add_df = pd.DataFrame(index=add_indices, columns=df2.columns).fillna(np.nan)
+                    df2=pd.concat([df2, add_df])
+                    df2=df2.sort_index()
+                    df2=df2.fillna(0)
+                    df2[df2>0]=1
+                    #print(df2.head())
+                    dataDic[hid]['Proc']=df2.to_dict(orient="list")
 
-            # --- PERIODIC FLUSH (Memory Safety) ---
-            if (i + 1) % chunk_size == 0:
-                flush_to_disk(chunk_demo, demo_path)
-                flush_to_disk(chunk_dyn, dyn_path)
-                flush_to_disk(chunk_static, static_path)
 
-        # Final flush for remaining data
-        flush_to_disk(chunk_demo, demo_path)
-        flush_to_disk(chunk_dyn, dyn_path)
-        flush_to_disk(chunk_static, static_path)
+                    feat_df=pd.DataFrame(columns=list(set(feat)-set(df2.columns)))
+                    df2=pd.concat([df2,feat_df],axis=1)
 
-        # Final Pickles
-        print("Saving metadata dictionaries...")
-        os.makedirs("./data/dict", exist_ok=True)
+                    df2=df2[feat]
+                    df2=df2.fillna(0)
+                    df2.columns=pd.MultiIndex.from_product([["PROC"], df2.columns])
+                
+                if(dyn_csv.empty):
+                    dyn_csv=df2
+                else:
+                    dyn_csv=pd.concat([dyn_csv,df2],axis=1)
+                
+                
+                
+                   
+            ###OUT
+            if(self.feat_out):
+                feat=out['itemid'].unique()
+                df2=out[out['stay_id']==hid]
+                if df2.shape[0]==0:
+                    df2=pd.DataFrame(np.zeros([los,len(feat)]),columns=feat)
+                    df2=df2.fillna(0)
+                    df2.columns=pd.MultiIndex.from_product([["OUT"], df2.columns])
+                else:
+                    df2['val']=1
+                    df2=df2.pivot_table(index='start_time',columns='itemid',values='val')
+                    #print(df2.shape)
+                    add_indices = pd.Index(range(los)).difference(df2.index)
+                    add_df = pd.DataFrame(index=add_indices, columns=df2.columns).fillna(np.nan)
+                    df2=pd.concat([df2, add_df])
+                    df2=df2.sort_index()
+                    df2=df2.fillna(0)
+                    df2[df2>0]=1
+                    #print(df2.head())
+                    dataDic[hid]['Out']=df2.to_dict(orient="list")
+
+                    feat_df=pd.DataFrame(columns=list(set(feat)-set(df2.columns)))
+                    df2=pd.concat([df2,feat_df],axis=1)
+
+                    df2=df2[feat]
+                    df2=df2.fillna(0)
+                    df2.columns=pd.MultiIndex.from_product([["OUT"], df2.columns])
+                
+                if(dyn_csv.empty):
+                    dyn_csv=df2
+                else:
+                    dyn_csv=pd.concat([dyn_csv,df2],axis=1)
+                
+                
+                
+            ###CHART
+            if(self.feat_chart):
+                feat=chart['itemid'].unique()
+                df2=chart[chart['stay_id']==hid]
+                if df2.shape[0]==0:
+                    val=pd.DataFrame(np.zeros([los,len(feat)]),columns=feat)
+                    val=val.fillna(0)
+                    val.columns=pd.MultiIndex.from_product([["CHART"], val.columns])
+                else:
+                    val=df2.pivot_table(index='start_time',columns='itemid',values='valuenum')
+                    df2['val']=1
+                    df2=df2.pivot_table(index='start_time',columns='itemid',values='val')
+                    #print(df2.shape)
+                    add_indices = pd.Index(range(los)).difference(df2.index)
+                    add_df = pd.DataFrame(index=add_indices, columns=df2.columns).fillna(np.nan)
+                    df2=pd.concat([df2, add_df])
+                    df2=df2.sort_index()
+                    df2=df2.fillna(0)
+
+                    val=pd.concat([val, add_df])
+                    val=val.sort_index()
+                    if self.impute=='Mean':
+                        val=val.ffill()
+                        val=val.bfill()
+                        val=val.fillna(val.mean())
+                    elif self.impute=='Median':
+                        val=val.ffill()
+                        val=val.bfill()
+                        val=val.fillna(val.median())
+                    val=val.fillna(0)
+
+
+                    df2[df2>0]=1
+                    df2[df2<0]=0
+                    #print(df2.head())
+                    dataDic[hid]['Chart']['signal']=df2.iloc[:,0:].to_dict(orient="list")
+                    dataDic[hid]['Chart']['val']=val.iloc[:,0:].to_dict(orient="list")
+
+                    feat_df=pd.DataFrame(columns=list(set(feat)-set(val.columns)))
+                    val=pd.concat([val,feat_df],axis=1)
+
+                    val=val[feat]
+                    val=val.fillna(0)
+                    val.columns=pd.MultiIndex.from_product([["CHART"], val.columns])
+                
+                if(dyn_csv.empty):
+                    dyn_csv=val
+                else:
+                    dyn_csv=pd.concat([dyn_csv,val],axis=1)
+            
+            #Save temporal data to csv
+            dyn_csv.to_csv('./data/csv/'+str(hid)+'/dynamic.csv',index=False)
+            
+            ##########COND#########
+            if(self.feat_cond):
+                feat=self.cond['new_icd_code'].unique()
+                grp=self.cond[self.cond['stay_id']==hid]
+                if(grp.shape[0]==0):
+                    dataDic[hid]['Cond']={'fids':list(['<PAD>'])}
+                    feat_df=pd.DataFrame(np.zeros([1,len(feat)]),columns=feat)
+                    grp=feat_df.fillna(0)
+                    grp.columns=pd.MultiIndex.from_product([["COND"], grp.columns])
+                else:
+                    dataDic[hid]['Cond']={'fids':list(grp['new_icd_code'])}
+                    grp['val']=1
+                    grp=grp.drop_duplicates()
+                    grp=grp.pivot(index='stay_id',columns='new_icd_code',values='val').reset_index(drop=True)
+                    feat_df=pd.DataFrame(columns=list(set(feat)-set(grp.columns)))
+                    grp=pd.concat([grp,feat_df],axis=1)
+                    grp=grp.fillna(0)
+                    grp=grp[feat]
+                    grp.columns=pd.MultiIndex.from_product([["COND"], grp.columns])
+            grp.to_csv('./data/csv/'+str(hid)+'/static.csv',index=False)   
+            labels_csv.to_csv('./data/csv/labels.csv',index=False)    
+            
+                
         ######SAVE DICTIONARIES##############
         metaDic={'Cond':{},'Proc':{},'Med':{},'Out':{},'Chart':{},'LOS':{}}
         metaDic['LOS']=los
@@ -655,4 +726,8 @@ class Generator():
             
         with open("./data/dict/metaDic", 'wb') as fp:
             pickle.dump(metaDic, fp)
-        print("Done! Data consolidated into 3 CSV files and dictionaries.")
+            
+            
+      
+
+

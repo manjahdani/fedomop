@@ -38,7 +38,7 @@ def build_dataset(use_ICU , label , disease_label , bucket , time  , oversamplin
             cols_t = [x + "_"+str(t) for x in cols]
 
             concat_cols.extend(cols_t)
-    X , Y = getXY(hids, labels , concat_cols , concat , use_ICU)
+    X , Y = getXY_consolidated(hids, labels , concat_cols , concat , use_ICU)
     print(X.shape)
     print("Saving dataset...")
     with open('./data/output/'+'X'+'.pkl', 'wb') as fp:
@@ -89,6 +89,77 @@ def process_single_sample(sample, label_val, concat, concat_cols, data_icu, mean
     # Return the combined row and the label
     return pd.concat([dyn_df, stat, demo], axis=1), label_val
 
+
+
+def getXY_consolidated(ids, labels, concat_cols, concat, data_icu):
+    print(f"Loading consolidated data for {len(ids)} samples...")
+
+    # 1. Load Files
+    dyn_all = pd.read_csv('./data/csv/all_dynamic.csv', header=[0, 1], low_memory=False)
+    stat_all = pd.read_csv('./data/csv/all_static.csv', low_memory=False)
+    demo_all = pd.read_csv('./data/csv/all_demo.csv', low_memory=False)
+
+    # Automatically identify the stay_id column in the MultiIndex
+    # It usually looks like ('stay_id', 'stay_id') or ('STAY_ID', 'STAY_ID')
+    id_tuple = [col for col in dyn_all.columns if 'stay_id' in str(col[0]).lower()][0]
+    id_name_simple = 'stay_id' if data_icu else 'hadm_id'
+
+    # 2. Aggregation (Process Unique Patients)
+    if concat:
+        print("Flattening time steps (Concatenate=True)...")
+        def flatten_patient(group):
+            # Drop the ID column before flattening
+            return pd.Series(group.drop(columns=id_tuple[0], level=0).to_numpy().flatten())
+        
+        X_dyn_unique = dyn_all.groupby(id_tuple).apply(flatten_patient)
+        X_dyn_unique.columns = concat_cols
+    else:
+        print("Aggregating time steps (Concatenate=False)...")
+        mean_keys = ["CHART", "MEDS"] if data_icu else ["LAB", "MEDS"]
+        
+        # 1. Extract only the unique Level 0 names available in the data
+        level0_names = [n for n in dyn_all.columns.get_level_values(0).unique() if 'stay_id' not in n.lower()]
+        
+        # 2. Map aggregation functions
+        agg_map = {name: ("mean" if name in mean_keys else "max") for name in level0_names}
+        
+        # 3. Aggregating specifically on Level 0
+        # By passing 'level=0' to the dict-aggregator, Pandas knows to look at the top category
+        X_dyn_unique = dyn_all.groupby(id_tuple).agg({
+            col: agg_map[col[0]] for col in dyn_all.columns if col[0] in agg_map
+        })
+        
+        # 4. Collapse MultiIndex columns: ('CHART', 'HeartRate') -> 'HeartRate'
+        X_dyn_unique.columns = X_dyn_unique.columns.droplevel(0)
+
+    # 3. Create Master Lookup Table
+    # Ensure indices are strings/ints consistently for the join
+    stat_all = stat_all.set_index('stay_id')
+    demo_all = demo_all.set_index('stay_id')
+    labels_idx = labels.set_index(id_name_simple)
+
+    # Combine all unique data into one table
+    master_unique = pd.concat([X_dyn_unique, stat_all, demo_all, labels_idx[['label']]], axis=1)
+
+    # 4. Apply Oversampling by Re-indexing
+    # This duplicates rows for the minority class based on your 'ids' list
+    print("Expanding dataset based on oversampled IDs...")
+    final_df = master_unique.loc[ids].reset_index(drop=True)
+
+    # 5. Sanity Checks
+    if final_df.isnull().values.any():
+        print("Warning: NaNs detected! Some IDs in your list were missing from the data files.")
+        final_df = final_df.fillna(0) # Or use your Missing_values_management strategy
+
+    # 6. Split X and Y
+    Y = final_df['label']
+    X = final_df.drop(columns=['label'])
+
+    print(f"--- Process Complete ---")
+    print(f"Final X Shape: {X.shape}")
+    print(f"Class Counts:\n{Y.value_counts()}")
+    
+    return X, Y
 def getXY( ids, labels, concat_cols , concat , data_icu):
 
     X_rows = []

@@ -10,7 +10,7 @@ import sys
 base_config = PrepocessConfig(
     Version="2.2",
     RawDataPath="mimic-IV/2.2/",
-    PreprocessedDataPath="data/output/",
+    PreprocessedDataPath="data/output2/",
     Task="Readmission",
     Include_ICU=True,
     Include_Diagnosis=True,
@@ -18,15 +18,15 @@ base_config = PrepocessConfig(
     Include_Medications=True,
     Include_chart_event=True,
     Include_output_event=True,
-    Disease_Filter = "None",
+    Disease_Filter = "HF",
     Outliers_management = "remove",
     Outliers_threshold_right = 98.0,
     Outliers_threshold_left = 0,
-    Time_window_size = 48,
-    Time_window_bucket_size = 6,
+    Time_window_size = 24,
+    Time_window_bucket_size = 1,
     Missing_values_management = "mean",
-    Oversampling = False , 
-    Concatenate = True, 
+    Oversampling = True , 
+    Concatenate = False, 
 
 )
 
@@ -127,7 +127,8 @@ def Extraction(config: PrepocessConfig , root_dir:str , checkpoint:CheckpointMan
     data_los=label=='Length of Stay'
             
 
-    if (config.Disease_Filter=="Heart Failure"):
+    if (config.Disease_Filter=="HF"):
+        print("HF selected")
         icd_code='I50'
     elif (config.Disease_Filter=="CKD"):
         icd_code='N18'
