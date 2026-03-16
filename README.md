@@ -54,30 +54,23 @@ The same overall pipeline can be adapted to other tasks such as:
 
 ### Dataset Access
 
-Before downloading the data, access must be approved through the official **PhysioNet** data use agreement.
+Before downloading the data, access must be approved through the official **PhysioNet** (PhysioNet portal:  
+https://physionet.org) data use agreement.
 
 Once access is granted:
-1. Download the required **MIMIC-IV** version (for example, v2.2).
-2. Place the raw files in the directory specified by `RawDataPath` in the configuration file.
-
-PhysioNet portal:  
-https://physionet.org
-
----
-
-### Run the Data Pipeline
-
-For the readmission pipeline, use the `base_config` defined in the code:
+1. Download the v2.2 **MIMIC-IV** version.
+2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of "pipeline_with_checkpoints.py".
+3. For the readmission pipeline, use the `base_config` defined in the code:
 
 ```bash
-python pipeline.py
+python fedomop/preprocess_MIMIC/pipeline_with_checkpoints.py
 ```
 
-This generates the feature matrix `X` and the readmission target `y` in the current directory.
+This generates a csv containing the feature matrix `X` and the readmission target `y` in "fedomop/preprocess_MIMIC/data/output".
+
 
 For more details about the data pipeline and outputs, see:
 - [MIMIC-IV Overview](docs/mimiciv.md)
-
 ---
 
 ## Running Experiments
@@ -205,4 +198,3 @@ This app is open-source under the **Apache 2.0 License**.
 This project was developed as part of the **MAIDAM** BioWin project funded by the **Walloon Region** under grant agreement:
 
 **PIT ATMP - Convention 8881**
-
