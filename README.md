@@ -1,16 +1,14 @@
 # Personalized Federated Framework with Flower & Docker for OMOP-CDM Multi-Hospital Readmission
 
-**Author:** Dani Manjah and Pierre Remacle
-
+**Authors:** Dani Manjah and Pierre Remacle  
 **Last update:** 07/03/2026
+
 ---
 
 ## About
 
-This repository documents how to run simulations and deploy **Federated Learning (FL) experiments**
-using **Flower** in a distributed, multi-machine setup for OMOP-CDM Multi-Hospital Data. The use case of readmission within 30 days is taken as an illustrative example.
- 
----
+This repository documents how to run simulations and deploy **Federated Learning (FL)** experiments using **Flower** in a distributed, multi-machine setup for **OMOP-CDM multi-hospital data**. The **30-day readmission** use case is provided as an illustrative example.
+
 > **Note**  
 > This repository uses a simplified demonstration dataset.  
 > The full experimental archive described in the paper is not publicly distributed and is planned for a future release.
@@ -44,33 +42,37 @@ pip install -e .
 
 This pipeline preprocesses **MIMIC-IV v2.2** Electronic Health Record (EHR) data into structured **static** and **time-series** features.
 
-The code snippet provided here is dedicated to the **readmission** use case.  
-The same overall pipeline can be adapted to other tasks such as:
+The code snippet provided here is dedicated to the **readmission** use case. The same overall pipeline can be adapted to other tasks such as:
 - mortality prediction
 - length of stay
 - phenotyping
 
----
-
 ### Dataset Access
 
-Before downloading the data, access must be approved through the official **PhysioNet** (PhysioNet portal:  
-https://physionet.org) data use agreement.
+Access must first be approved through the official **PhysioNet** data use agreement.
+
+PhysioNet portal:  
+https://physionet.org
 
 Once access is granted:
-1. Download the v2.2 **MIMIC-IV** version.
-2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of "pipeline_with_checkpoints.py".
-3. For the readmission pipeline, use the `base_config` defined in the code:
+
+1. Download **MIMIC-IV v2.2**.
+2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of `pipeline_with_checkpoints.py`.
+3. Run the readmission pipeline using the `base_config` defined in the code:
 
 ```bash
 python fedomop/preprocess_MIMIC/pipeline_with_checkpoints.py
 ```
 
-This generates a csv containing the feature matrix `X` and the readmission target `y` in "fedomop/preprocess_MIMIC/data/output".
+This generates CSV files containing the feature matrix `X` and the readmission target `y` in:
 
+```bash
+fedomop/preprocess_MIMIC/data/output
+```
 
 For more details about the data pipeline and outputs, see:
 - [MIMIC-IV Overview](docs/mimiciv.md)
+
 ---
 
 ## Running Experiments
@@ -91,7 +93,7 @@ This will:
 - train the federated model
 - log metrics
 
-#### Simulation configuration
+#### Simulation Configuration
 
 The `local-simulation` runtime is defined in the Flower configuration file:
 
@@ -106,9 +108,9 @@ Example:
 options.num-supernodes = 3
 ```
 
-This runs the simulation locally with **3 virtual SuperNodes (clients)**.
+This configuration runs the simulation locally with **3 virtual SuperNodes (clients)**.
 
-#### Custom simulation parameters
+#### Custom Simulation Parameters
 
 You can override parameters defined in `pyproject.toml` with `--run-config`:
 
@@ -155,7 +157,7 @@ flower-supernode --insecure \
     --node-config "partition-id=2 num-partitions=3"
 ```
 
-#### Step 3 — Launch the federated run
+#### Step 3 — Launch the Federated Run
 
 ```bash
 flwr run . local-deployment --stream
@@ -183,13 +185,13 @@ It also tracks summary statistics across clients, including:
 - variance
 - minimum
 
-Simulation results are automatically saved in the `results/` directory. And the final model is uploaded as .pt
+Simulation results are automatically saved in the `results/` directory. The final model is also exported as a `.pt` file.
 
 ---
 
 ## License
 
-This app is open-source under the **Apache 2.0 License**.
+This project is open-source under the **Apache 2.0 License**.
 
 ---
 
