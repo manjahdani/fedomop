@@ -119,6 +119,8 @@ class PrepocessConfig(SavableConfig):
 
     Oversampling: bool = True 
     Concatenate: bool = True
+    
+    Output_format: str = "csv"  # csv, pkl , npy
 
     def save_to_json(self, path: str | None = None):
         """Saves this config at `path` if provided, else in the same place as `self.out_path`"""

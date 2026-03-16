@@ -1,6 +1,5 @@
 **/__pycache__/
 data/
-*.txt
 *.pt
 mimic-IV/
 fds_0
@@ -12,3 +11,7 @@ fedomop/preprocess_MIMIC/.DS_Store
 fedomop/.DS_Store
 maidam/ml/datasets/.DS_Store
 fold_big
+/fedomop/preprocess_MIMIC/venv_dani
+.DS_Store
+fedomop/preprocess_MIMIC/.DS_Store
+fedomop/preprocess_MIMIC/.DS_Store

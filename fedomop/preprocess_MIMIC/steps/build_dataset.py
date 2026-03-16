@@ -6,7 +6,29 @@ from pathlib import Path
 from imblearn.over_sampling import RandomOverSampler
 from joblib import Parallel, delayed
 
-def build_dataset(use_ICU , label , disease_label , bucket , time  , oversampling , concat ):
+def save_dataset(X, Y, out_dir="./data/output", fmt="pkl"):
+    os.makedirs(out_dir, exist_ok=True)
+
+    print("Saving dataset...")
+
+    if fmt == "pkl":
+        with open(os.path.join(out_dir, "X.pkl"), "wb") as fp:
+            pickle.dump(X, fp)
+        with open(os.path.join(out_dir, "Y.pkl"), "wb") as fp:
+            pickle.dump(Y, fp)
+
+    elif fmt == "npy":
+        np.save(os.path.join(out_dir, "X.npy"), np.array(X))
+        np.save(os.path.join(out_dir, "Y.npy"), np.array(Y))
+
+    elif fmt == "csv":
+        pd.DataFrame(X).to_csv(os.path.join(out_dir, "X.csv"), index=False)
+        pd.DataFrame(Y).to_csv(os.path.join(out_dir, "Y.csv"), index=False)
+
+    else:
+        raise ValueError("Unsupported format. Choose from: pkl, npy, csv")
+
+def build_dataset(use_ICU , label , disease_label , bucket , time  , oversampling , concat , fmt = "csv" ):
 
     cohort_output = (
         "cohort_"
@@ -41,11 +63,7 @@ def build_dataset(use_ICU , label , disease_label , bucket , time  , oversamplin
     X , Y = getXY_consolidated(hids, labels , concat_cols , concat , use_ICU)
     print(X.shape)
     print("Saving dataset...")
-    with open('./data/output/'+'X'+'.pkl', 'wb') as fp:
-        pickle.dump(X, fp)
-    with open('./data/output/'+'Y'+'.pkl', 'wb') as fp:
-        pickle.dump(Y, fp)
-    
+    save_dataset(X, Y, out_dir=output_dir, fmt=fmt) 
 
 def create_hids(oversampling):
 

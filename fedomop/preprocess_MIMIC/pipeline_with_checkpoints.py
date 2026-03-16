@@ -27,6 +27,7 @@ base_config = PrepocessConfig(
     Missing_values_management = "mean",
     Oversampling = True , 
     Concatenate = False, 
+    Output_format = "csv"
 
 )
 
@@ -248,6 +249,7 @@ def Generation(config: PrepocessConfig , cohort_output , checkpoint:CheckpointMa
         checkpoint.mark_done("Generation")
 
 def Create_final_csv(config: PrepocessConfig):
+    fmt = config.Output_format
     print("\n")
     print("Create final csv file")
     print("\n")
@@ -258,7 +260,7 @@ def Create_final_csv(config: PrepocessConfig):
     bucket = config.Time_window_bucket_size
     oversampling = config.Oversampling 
     concat = config.Concatenate
-    build_dataset.build_dataset(use_ICU , label , disease_label , bucket , time , oversampling , concat)
+    build_dataset.build_dataset(use_ICU , label , disease_label , bucket , time , oversampling , concat, fmt )
 
 
 # -----------------------
