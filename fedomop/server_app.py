@@ -68,6 +68,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
     
     dataset = "mimiciv" #HARDCODED FOR APP
     model_cls = "ResMLP" #HARDCODED FOR APP
+    
     # Load the model and initialize it with the received weights
     model = create_instantiate_parameters(dataset, model_cls)
     model.load_state_dict(arrays.to_torch_state_dict())
