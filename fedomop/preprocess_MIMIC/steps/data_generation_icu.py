@@ -300,7 +300,7 @@ class Generator():
         for i in tqdm(range(0,self.los,bucket)): 
             ###MEDS
              if(self.feat_med):
-                sub_meds=self.meds[(self.meds['start_time']>=i) & (self.meds['start_time']<i+bucket)].groupby(['stay_id','itemid','orderid']).agg({'stop_time':'max','subject_id':'max','rate':np.nanmean,'amount':np.nanmean})
+                sub_meds=self.meds[(self.meds['start_time']>=i) & (self.meds['start_time']<i+bucket)].groupby(['stay_id','itemid','orderid']).agg({'stop_time':'max','subject_id':'max','rate':'mean','amount':'mean'})
                 sub_meds=sub_meds.reset_index()
                 sub_meds['start_time']=t
                 sub_meds['stop_time']=sub_meds['stop_time']/bucket

@@ -326,7 +326,6 @@ def extract_data(use_ICU:str, label:str, time:int, icd_code:str, root_dir, versi
         cols.append(death_col)
         cohort, invalid = get_case_ctrls(pts, None, group_col, visit_col, admit_col, disch_col,'min_valid_year', death_col, use_mort=True,use_admn=False,use_los=False)
     elif use_admn:
-        print("ohoh")
         interval = time
         cohort, invalid = get_case_ctrls(pts, interval, group_col, visit_col, admit_col, disch_col,'min_valid_year', death_col, use_mort=False,use_admn=True,use_los=False)
     elif use_los:

@@ -36,52 +36,6 @@ class PrepocessConfig(SavableConfig):
     
     Parameters
     ----------
-    Version : str
-        The version of the MIMIC-IV dataset to use, e.g. "2.2"
-    RawDataPath : str
-        The path to the raw MIMIC-IV data, e.g. "data/mimic-IV/2.2"
-    PreprocessedDataPath : str
-        The path to save the preprocessed data, e.g. "data/output"
-    Task : str
-        The prediction task to preprocess for, e.g. "Mortality", "Length Of Stay", "Readmission", "Phenotype"
-    Include_ICU : bool
-        Whether to include ICU stays in the dataset
-    Include_Diagnosis : bool
-        Whether to include diagnosis codes in the dataset
-    Include_Procedures : bool
-        Whether to include procedure codes in the dataset
-    Include_Medications : bool
-        Whether to include medication codes in the dataset
-    Include_chart_event : bool
-        Whether to include chart events in the dataset
-        if ICU is included -> chart event include both vitals and labs
-        if ICU is not included -> chart event include only labs (vitals are only recorded in the ICU)
-    Include_output_event : bool
-        Whether to include output events in the dataset
-        if ICU is included -> output event include both output events and chart events (vitals and labs)
-        if ICU is not included -> output event not included (output events are only recorded in the ICU)
-    Include_HF_patients : bool
-        Whether to include patients with heart failure in the dataset
-    Include_COPD_patients : bool
-        Whether to include patients with chronic obstructive pulmonary disease in the dataset
-    Include_CKD_patients : bool
-        Whether to include patients with chronic kidney disease in the dataset
-    Include_CAD_patients : bool
-        Whether to include patients with coronary artery disease in the dataset
-    Outliers_management : str
-        The method to handle outliers in the dataset, e.g. "remove", "impute_mean", "impute_median", "impute_mode", "impute_random", "none"
-    Outliers_threshold : float
-        The Z-score threshold for outlier detection, e.g. 3.0
-    Time_window_reference : str
-        The reference point for the time window, e.g. "admission", "discharge"
-    Time_window_size : int
-        The size of the time window in hours, e.g. 24 for the first 24 hours of the ICU stay
-    Time_window_bucket_size : int
-        The size of the time buckets in hours, e.g. 1 for hourly buckets
-    Time_prediction_horizon : int
-        The prediction horizon in hours, e.g. 2 for predicting within the next 2 hours
-    Missing_values_management : str
-        The method to handle missing values in the dataset, e.g. "impute_mean", "impute_median", "impute_mode", "impute_random", "none"
 
     """
 
@@ -89,9 +43,8 @@ class PrepocessConfig(SavableConfig):
     Version: str = "2.2"
     # Paths
     RawDataPath: str = "data/mimic-IV/2.2"
-    PreprocessedDataPath: str = "data/output"
     # Preprocessing parameters
-    Task: str = "mortality"  # mortality, LengthOfStay, readmission , phenotype 
+    Task: str = "Mortality"  # mortality, LengthOfStay, readmission , phenotype 
     # task specific parameters 
     Mortality_prediction_horizon: int = 2  # in hours, e.g. 2 for predicting mortality within next 24 hours
     LengthOfStay_greater_or_equal_threshold: int = 3  # in days, e.g. 3 for predicting if Length of Stay is greater or equal to 3 days 
@@ -108,19 +61,88 @@ class PrepocessConfig(SavableConfig):
     Include_output_event: bool = True 
     
     Disease_Filter: str = "None"  # None, HF, COPD, CKD, CAD 
-    Outliers_management: str = "remove"  # remove, impute_mean , impute_median, impute_mode, impute_random, none 
+    Outliers_management: str = "impute"  # remove, impute , No_outlier_detection 
     Outliers_threshold_right: float = 98.0  # right treshold for outlier detection, e.g. 98.0 for the 98th percentile  
     Outliers_threshold_left: float = 0.0  # left treshold for outlier detection, e.g. 0.0 for the 0th percentile (no left outliers)
 
     Time_window_size: int = 24  # in hours, e.g. 24 for first 24 hours 
     Time_window_bucket_size: int = 1  # in hours, e.g. 1 for hourly buckets 
 
-    Missing_values_management: str = "mean"  # mean, median, mode, random, none 
+    Missing_values_management: str = "FF_mean"  # FF_mean, FF_median, No_imputation 
 
     Oversampling: bool = True 
-    Concatenate: bool = True
+    Concatenate: bool = False
     
     Output_format: str = "csv"  # csv, pkl , npy
+
+    def __post_init__(self):
+        """Automatically validate config values after initialization."""
+        self._validate()
+
+    def _validate(self):
+        errors = []
+
+        valid_tasks = {"Mortality", "Length of stay", "Readmission", "Phenotype"}
+        valid_phenotypes = {"HF", "COPD", "CKD", "CAD"}
+        valid_disease_filters = {"None", "HF", "COPD", "CKD", "CAD"}
+        valid_outlier_methods = {"remove", "impute","No_outlier_detection"}
+        valid_missing = {"FF_mean", "FF_median", "No_imputation"}
+        valid_formats = {"csv", "pkl", "npy"}
+
+        if self.Task not in valid_tasks:
+            errors.append(f"Invalid Task '{self.Task}'. Must be one of {valid_tasks}")
+
+        if self.Phenotype not in valid_phenotypes:
+            errors.append(f"Invalid Phenotype '{self.Phenotype}'. Must be one of {valid_phenotypes}")
+
+        if self.Disease_Filter not in valid_disease_filters:
+            errors.append(f"Invalid Disease_Filter '{self.Disease_Filter}'. Must be one of {valid_disease_filters}")
+
+        if self.Outliers_management not in valid_outlier_methods:
+            errors.append(
+                f"Invalid Outliers_management '{self.Outliers_management}'. "
+                f"Must be one of {valid_outlier_methods}"
+            )
+
+        if self.Missing_values_management not in valid_missing:
+            errors.append(
+                f"Invalid Missing_values_management '{self.Missing_values_management}'. "
+                f"Must be one of {valid_missing}"
+            )
+
+        if self.Output_format not in valid_formats:
+            errors.append(
+                f"Invalid Output_format '{self.Output_format}'. "
+                f"Must be one of {valid_formats}"
+            )
+
+        if self.Time_window_bucket_size > self.Time_window_size:
+            errors.append(
+                "Time_window_bucket_size cannot be larger than Time_window_size"
+            )
+
+        if not (0 <= self.Outliers_threshold_left <= 100):
+            errors.append("Outliers_threshold_left must be between 0 and 100")
+
+        if not (0 <= self.Outliers_threshold_right <= 100):
+            errors.append("Outliers_threshold_right must be between 0 and 100")
+
+        if self.Outliers_threshold_left > self.Outliers_threshold_right:
+            errors.append(
+                "Outliers_threshold_left cannot be greater than Outliers_threshold_right"
+            )
+
+        if not isinstance(self.Include_ICU, bool):
+            errors.append("Include_ICU must be a boolean")
+
+        if errors:
+            print("\nConfig validation errors:")
+            for e in errors:
+                print(" -", e)
+
+        if self.Concatenate == True: 
+            # warning
+            print("Warning: Concatenate is set to True, this may lead to very wide feature vectors and potential memory issues. Make sure this is intentional.")
 
     def save_to_json(self, path: str | None = None):
         """Saves this config at `path` if provided, else in the same place as `self.out_path`"""

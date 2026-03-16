@@ -6,11 +6,17 @@ from steps import data_generation
 from steps import data_generation_icu
 from steps import build_dataset
 import sys
+from functools import wraps
+import inspect
+import pandas as pd
+import glob
+from datetime import datetime
+from dataclasses import asdict
+
 
 base_config = PrepocessConfig(
     Version="2.2",
     RawDataPath="mimic-IV/2.2/",
-    PreprocessedDataPath="data/output2/",
     Task="Readmission",
     Include_ICU=True,
     Include_Diagnosis=True,
@@ -19,12 +25,12 @@ base_config = PrepocessConfig(
     Include_chart_event=True,
     Include_output_event=True,
     Disease_Filter = "HF",
-    Outliers_management = "remove",
+    Outliers_management = "impute",
     Outliers_threshold_right = 98.0,
     Outliers_threshold_left = 0,
     Time_window_size = 24,
     Time_window_bucket_size = 1,
-    Missing_values_management = "mean",
+    Missing_values_management = "FF_mean",
     Oversampling = True , 
     Concatenate = False, 
     Output_format = "csv"
@@ -35,50 +41,51 @@ base_config = PrepocessConfig(
 # Checkpoint Utilities
 # -----------------------
 
+
 class CheckpointManager:
-
-    def __init__(self, config):
+    def __init__(self, config, force_new_run=False):
         self.config = config
-        self.cohort_output = self._build_cohort_name()
-        self.checkpoint_dir = self._init_checkpoint_dir()
+        self.base_dir = os.path.join("data/output")
+        self.checkpoint_dir = self._init_checkpoint_dir(force_new_run)
 
-    def _build_cohort_name(self):
-        use_ICU = str(self.config.Include_ICU)
-        label = self.config.Task
-        disease_label = self.config.Disease_Filter
-        time = self.config.Time_window_size
-        bucket = self.config.Time_window_bucket_size
 
-        cohort_output = (
-            "cohort_"
-            + use_ICU.lower()
-            + "_"
-            + label.lower().replace(" ", "_")
-            + "_"
-            + str(time)
-            + "_"
-            + str(bucket)
-            + "_"
-            + disease_label
-        )
+    def _init_checkpoint_dir(self, force_new_run):
+        # Use asdict for a reliable comparison of dataclass values
+        current_config_dict = self.config
+        
+        if not force_new_run:
+            # Get all run directories and sort by name (timestamp)
+            existing_folders = sorted(glob.glob(os.path.join(self.base_dir, "run_*")))
+            
+            if existing_folders:
+                latest_folder = existing_folders[-1]
+                config_path = os.path.join(latest_folder, "config.json")
+                
+                if os.path.exists(config_path):
+                    saved_config = PrepocessConfig()
+                    saved_config.load_from_json(config_path) 
+                    if saved_config == current_config_dict:
+                        print(f"✅ Config matches. Resuming from: {latest_folder}")
+                        return latest_folder
 
-        return cohort_output
-
-    def _init_checkpoint_dir(self):
-        path = os.path.join("data/output", self.cohort_output, ".checkpoints")
-        os.makedirs(path, exist_ok=True)
-        return path
+        # Create new timestamped directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_dir = os.path.join(self.base_dir, f"run_{timestamp}")
+        os.makedirs(new_dir, exist_ok=True)
+        
+        # Use your built-in save function
+        self.config.save_to_json(os.path.join(new_dir, "config"))
+            
+        reason = "🚀 Forced new run" if force_new_run else "🆕 Config changed/New run"
+        print(f"{reason}. Created: {new_dir}")
+        return new_dir
 
     def is_done(self, step_name: str) -> bool:
-        return os.path.exists(
-            os.path.join(self.checkpoint_dir, f"{step_name}.done")
-        )
+        return os.path.exists(os.path.join(self.checkpoint_dir, f"{step_name}.done"))
 
     def mark_done(self, step_name: str):
-        open(
-            os.path.join(self.checkpoint_dir, f"{step_name}.done"),
-            "w"
-        ).close()
+        with open(os.path.join(self.checkpoint_dir, f"{step_name}.done"), "w") as f:
+            f.write(datetime.now().isoformat())
 
     def reset_step(self, step_name: str):
         file_path = os.path.join(self.checkpoint_dir, f"{step_name}.done")
@@ -90,9 +97,7 @@ class CheckpointManager:
 # -----------------------
 
 def Extraction(config: PrepocessConfig , root_dir:str , checkpoint:CheckpointManager):
-    print("\n")
-    print("Extraction step")
-    print("\n")
+
     disease_label=""
     time=0
     label=config.Task 
@@ -140,14 +145,28 @@ def Extraction(config: PrepocessConfig , root_dir:str , checkpoint:CheckpointMan
     else:
         icd_code='No Disease Filter'
 
+
+    if checkpoint.is_done( "Extraction"):
+        print("\n")
+        print("Feature selection already completed. Skipping.")
+        print("\n")
+        use_ICU = "ICU" if config.Include_ICU else "Non_ICU"
+        disease_label=icd_code
+        cohort_output="cohort_" + use_ICU.lower() + "_" + label.lower().replace(" ", "_") + "_" + str(time) + "__" + disease_label
+        return cohort_output
+
+    print("\n")
+    print("Extraction step")
+    print("\n")
     if config.Version=='2.2':
         version_path=config.RawDataPath
         icu_text = "ICU" if data_icu else "Non_ICU"
         cohort_output = extraction.extract_data(icu_text,label,time,icd_code, root_dir, version_path ,disease_label)
+        checkpoint.mark_done( "Extraction")
+        return cohort_output    
     else:
         raise ValueError("Invalid version selected. This pipline only supports 2.2 for now")
-    
-    return cohort_output    
+     
 
 def FeatureSelection(config: PrepocessConfig , cohort_output , checkpoint:CheckpointManager):
     
@@ -203,8 +222,8 @@ def FeatureProcessing(config: PrepocessConfig , cohort_output , checkpoint:Check
         diag_flag=config.Include_Diagnosis 
         chart_flag=config.Include_chart_event 
         proc_flag=config.Include_Procedures
-        clean_chart=config.Outliers_management=='remove'
-        impute_outlier_chart= config.Outliers_management == 'remove'
+        clean_chart=config.Outliers_management !='No_outlier_detection'
+        impute_outlier_chart= config.Outliers_management == 'impute'
         thresh_right=config.Outliers_threshold_right 
         thresh_left=config.Outliers_threshold_left
         med_flag=config.Include_Medications 
@@ -233,7 +252,12 @@ def Generation(config: PrepocessConfig , cohort_output , checkpoint:CheckpointMa
     chart_flag=config.Include_chart_event 
     proc_flag=config.Include_Procedures 
     med_flag=config.Include_Medications 
-    impute=config.Missing_values_management 
+    if config.Missing_values_management == "FF_mean":
+        impute="Mean"
+    elif config.Missing_values_management == "FF_median":
+        impute="Median"
+    else:
+        impute = False
     include=config.Time_window_size
     bucket=config.Time_window_bucket_size 
     predW=config.Mortality_prediction_horizon 
@@ -242,10 +266,10 @@ def Generation(config: PrepocessConfig , cohort_output , checkpoint:CheckpointMa
     data_los=config.Task=='Length of Stay'
 
     if config.Include_ICU:
-        gen=data_generation_icu.Generator(cohort_output,data_mort,data_admn,data_los,diag_flag,proc_flag,out_flag,chart_flag,med_flag,impute,include,bucket,predW)
+        gen=data_generation_icu.Generator(cohort_output,data_mort,data_admn,data_los,diag_flag,proc_flag,out_flag,chart_flag,med_flag,impute,include,bucket,predW )
         checkpoint.mark_done("Generation")
     else:
-        gen=data_generation.Generator(cohort_output,data_mort,data_admn,data_los,diag_flag,chart_flag,proc_flag,med_flag,impute,include,bucket,predW)
+        gen=data_generation.Generator(cohort_output,data_mort,data_admn,data_los,diag_flag,chart_flag,proc_flag,med_flag,impute,include,bucket,predW  )
         checkpoint.mark_done("Generation")
 
 def Create_final_csv(config: PrepocessConfig):
@@ -268,9 +292,15 @@ def Create_final_csv(config: PrepocessConfig):
 # -----------------------
 
 if __name__ == "__main__":
-
     root_dir = os.getcwd() + "/"
+    force_new = False
 
+    # Check for the --force flag anywhere in arguments
+    if "--force" in sys.argv:
+        force_new = True
+        sys.argv.remove("--force") # Clean it up so it doesn't interfere with path logic
+
+    # Logic to handle config path
     if len(sys.argv) == 2:
         config_path = sys.argv[1]
         config = PrepocessConfig()
@@ -278,17 +308,19 @@ if __name__ == "__main__":
     elif len(sys.argv) == 1:
         config = base_config
     else:
-        raise ValueError("Provide 0 or 1 argument for config file.")
+        raise ValueError("Usage: script.py [config_path] [--force]")
 
-    checkpoint = CheckpointManager(config)
+    # Pass the force flag here
+    checkpoint  = CheckpointManager(config, force_new_run=force_new)
 
     print("Configuration loaded:")
     print(config)
 
-    cohort_output = Extraction(config, root_dir , checkpoint)
+    # Pass checkpoint to your classes
+    cohort_output = Extraction(config, root_dir, checkpoint)
     
-    FeatureSelection(config, cohort_output , checkpoint)
-    FeatureProcessing(config, cohort_output , checkpoint)
-    Generation(config, cohort_output , checkpoint)
+    FeatureSelection(config, cohort_output, checkpoint)
+    FeatureProcessing(config, cohort_output, checkpoint)
+    Generation(config, cohort_output, checkpoint)
 
     Create_final_csv(config)

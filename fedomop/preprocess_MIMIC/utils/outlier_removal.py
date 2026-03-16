@@ -14,9 +14,9 @@ def compute_outlier_imputation(arr, cut_off,left_thresh,impute):
         arr[arr < perc_up] = np.nan
         arr[arr > perc_down] = np.nan
     length_end=arr.shape[0]
-    print(length_start)
-    print(length_end)
-    print(length_start-length_end)
+    # print(length_start)
+    # print(length_end)
+    # print(length_start-length_end)
     return arr
 
 
