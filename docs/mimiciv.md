@@ -46,7 +46,7 @@ https://physionet.org
 ## Run with Default Configuration
 
 ```bash
-python pipeline.py
+python generate_dataset.py
 ```
 
 Uses `base_config` defined in the code.
@@ -56,7 +56,7 @@ Uses `base_config` defined in the code.
 ## Run with a Custom Configuration File
 
 ```bash
-python pipeline.py ../folder/config.json
+python generate_dataset.py ../folder/config.json
 ```
 
 ---
@@ -69,7 +69,6 @@ python pipeline.py ../folder/config.json
 |------------|------------|
 | `Version` | Dataset version (e.g. `"2.2"`) |
 | `RawDataPath` | Path to raw MIMIC-IV data |
-| `PreprocessedDataPath` | Output directory |
 
 ---
 
@@ -199,6 +198,35 @@ If `none`:
 - Missing values are encoded as `0`.
 
 ---
+
+
+## Oversampling
+
+| Parameter | Description |
+|------------|------------|
+| `Oversampling` | `True`, `False` |
+
+When enabled, the pipeline performs **oversampling of the minority class** to reduce class imbalance in the training data.
+
+Oversampling is applied **after feature extraction**
+
+## Concatenate 
+
+| Parameter | Description |
+|------------|------------|
+| `Concatenate` | `True`, `False` |
+
+When enabled, temporal features from multiple sources are merged along the **feature dimension**:
+
+**Warning**
+
+Concatenation can significantly increase the **feature dimensionality** and **memory usage**.
+
+## Output Format
+
+| Parameter | Description |
+|------------|------------|
+| `Output_format` | `csv`, `npy` , `pkl` |
 
 # Preprocessing Steps
 
@@ -338,15 +366,7 @@ Three CSV files are generated:
 2. Dynamic time-series features  
 3. Demographic features  
 
-Each CSV has shape:
-
-```
-(#time_steps, #features)
-```
-
-Additionally:
-
-- A dictionary containing full cohort data is saved as a pickle file.
+Then a pair of X , y file are generated. 
 
 ---
 
@@ -389,3 +409,6 @@ If using this pipeline, cite:
 
 An Extensive Data Processing Pipeline for MIMIC-IV  
 Gupta et al., ML4H 2022. -->
+
+
+
