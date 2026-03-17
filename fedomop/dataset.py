@@ -6,8 +6,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-X_path = Path("./fedomop/preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF/X.csv")
-Y_path = Path("./fedomop/preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF/Y.csv")
+X_path = Path("./preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF/X.csv")
+Y_path = Path("./preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF/Y.csv")
 
 # 1) Load
 X = pd.read_csv(X_path)
