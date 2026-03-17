@@ -1,7 +1,7 @@
 # Personalized Federated Framework with Flower & Docker for OMOP-CDM Multi-Hospital Readmission
 
 **Authors:** Dani Manjah and Pierre Remacle  
-**Last update:** 07/03/2026
+**Last update:** 17/03/2026
 
 ---
 
@@ -42,7 +42,7 @@ pip install -e .
 
 This pipeline preprocesses **MIMIC-IV v2.2** Electronic Health Record (EHR) data into structured **static** and **time-series** features.
 
-The code snippet provided here is dedicated to the **readmission** use case. The same overall pipeline can be adapted to other tasks such as:
+The code provided here is dedicated to the **readmission** use case. The same overall pipeline can be adapted to other tasks such as:
 - mortality prediction
 - length of stay
 - phenotyping
@@ -52,13 +52,15 @@ The code snippet provided here is dedicated to the **readmission** use case. The
 Access must first be approved through the official **PhysioNet** data use agreement.
 
 PhysioNet portal:  
-https://physionet.org
+https://physionet.org/content/mimiciv/2.2/
+
+Scroll to the bottom of the page to find the instructions on how to become a credentialed user and which requirements must be fulfilled.
 
 Once access is granted:
 
 1. Download **MIMIC-IV v2.2**.
 2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of `generate_dataset.py`.
-3. Run the readmission pipeline using the `base_config` defined in the code:
+3. Run the readmission dataset generation pipeline using the `base_config` defined in the code:
 
 ```bash
 cd preprocess_MIMIC
@@ -160,10 +162,9 @@ flower-supernode --insecure
 
 #### Step 3 — Launch the Federated Run
 
+The `local-deployment` runtime must be added to `config.toml`.
 
-/!\ The `local-deployment` runtime should be added in `config.toml`:
-
-If not present, you only need to copy paste the following : 
+If it is not already present, add the following:
 
 ```toml
 [superlink.local-deployment]
@@ -171,7 +172,7 @@ address = "127.0.0.1:9093"
 insecure = true
 ```
 
-When it is included, and in **another terminal execute**. 
+Once it is included, run the following command in **another terminal**:
 
 ```bash
 flwr run . local-deployment --stream
@@ -193,6 +194,8 @@ It also tracks summary statistics across clients, including:
 
 Simulation results are automatically saved in the `results/` directory. The final model is also exported as a `.pt` file.
 
+
+ ![](docs/images/plot_simu.png)
 ---
 
 ## License

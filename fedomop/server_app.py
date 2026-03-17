@@ -3,7 +3,6 @@
 from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
 from flwr.serverapp.strategy import FedAvg
-
 import torch
 
 from fedomop.task_utils import (create_instantiate_parameters, 
@@ -13,6 +12,8 @@ from fedomop.task_utils import (create_instantiate_parameters,
                                 seed_all,)
 
 from fedomop.log_utils import config_json_file, save_metrics_as_json
+
+from result_visualization import plot_metrics
 
 # Create Flower ServerApp
 app = ServerApp()
@@ -60,7 +61,8 @@ def main(grid: Grid, context: Context) -> None:
     print("\nSaving final model to disk...")
     state_dict = result.arrays.to_torch_state_dict()
     torch.save(state_dict, "final_model.pt")
-
+    print("\n Plotting results")
+    plot_metrics(res_save_path)
 
 def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
     """Evaluate model on central data."""

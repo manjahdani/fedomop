@@ -37,7 +37,7 @@ Access must be approved via the official data use agreement on PhysioNet.
 Once access is granted, download the required MIMIC-IV version (e.g., v2.2) and place the raw files in the directory specified by `RawDataPath` in the configuration file.
 
 PhysioNet portal:  
-https://physionet.org
+https://physionet.org/content/mimiciv/2.2/
 
 ---
 
@@ -409,6 +409,3 @@ If using this pipeline, cite:
 
 An Extensive Data Processing Pipeline for MIMIC-IV  
 Gupta et al., ML4H 2022. -->
-
-
-
