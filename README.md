@@ -194,6 +194,7 @@ It also tracks summary statistics across clients, including:
 
 Simulation results are automatically saved in the `results/` directory. The final model is also exported as a `.pt` file.
 
+If you had launch, with 10 nodes using our standard paramters, you should obtain:
 
  ![](docs/images/plot_simu.png)
 ---
