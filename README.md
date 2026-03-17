@@ -57,17 +57,18 @@ https://physionet.org
 Once access is granted:
 
 1. Download **MIMIC-IV v2.2**.
-2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of `pipeline_with_checkpoints.py`.
+2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of `generate_dataset.py`.
 3. Run the readmission pipeline using the `base_config` defined in the code:
 
 ```bash
-python fedomop/preprocess_MIMIC/pipeline_with_checkpoints.py
+cd preprocess_MIMIC
+python generate_dataset.py
 ```
 
 This generates CSV files containing the feature matrix `X` and the readmission target `y` in:
 
 ```bash
-fedomop/preprocess_MIMIC/data/output
+preprocess_MIMIC/data/output
 ```
 
 For more details about the data pipeline and outputs, see:
@@ -137,38 +138,43 @@ flower-superlink --insecure
 Example with 3 hospitals:
 
 ```bash
-flower-supernode --insecure \
-    --superlink 127.0.0.1:9092 \
-    --clientappio-api-address 127.0.0.1:9104 \
+flower-supernode --insecure 
+    --superlink 127.0.0.1:9092 
+    --clientappio-api-address 127.0.0.1:9104 
     --node-config "partition-id=0 num-partitions=3"
 ```
 
 ```bash
-flower-supernode --insecure \
-    --superlink 127.0.0.1:9092 \
-    --clientappio-api-address 127.0.0.1:9105 \
+flower-supernode --insecure 
+    --superlink 127.0.0.1:9092 
+    --clientappio-api-address 127.0.0.1:9105 
     --node-config "partition-id=1 num-partitions=3"
 ```
 
 ```bash
-flower-supernode --insecure \
-    --superlink 127.0.0.1:9092 \
-    --clientappio-api-address 127.0.0.1:9106 \
+flower-supernode --insecure 
+    --superlink 127.0.0.1:9092 
+    --clientappio-api-address 127.0.0.1:9106 
     --node-config "partition-id=2 num-partitions=3"
 ```
 
 #### Step 3 — Launch the Federated Run
 
-```bash
-flwr run . local-deployment --stream
-```
 
-The `local-deployment` runtime is defined in `config.toml`:
+/!\ The `local-deployment` runtime should be added in `config.toml`:
+
+If not present, you only need to copy paste the following : 
 
 ```toml
 [superlink.local-deployment]
 address = "127.0.0.1:9093"
 insecure = true
+```
+
+When it is included, and in **another terminal execute**. 
+
+```bash
+flwr run . local-deployment --stream
 ```
 
 ---
