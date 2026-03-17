@@ -16,7 +16,7 @@ from dataclasses import asdict
 
 base_config = PrepocessConfig(
     Version="2.2",
-    RawDataPath="mimic-IV/2.2/",
+    RawDataPath="mimic-iv-2.2/",
     Task="Readmission",
     Include_ICU=True,
     Include_Diagnosis=True,

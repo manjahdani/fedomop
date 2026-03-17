@@ -58,13 +58,16 @@ Scroll to the bottom of the page to find the instructions on how to become a cre
 
 Once access is granted:
 
-1. Download **MIMIC-IV v2.2**.
-2. Place the raw files in the directory specified by `RawDataPath` in the configuration file of `generate_dataset.py`.
-3. Run the readmission dataset generation pipeline using the `base_config` defined in the code:
+1. Download **MIMIC-IV v2.2** (let's assume it is `mimic-iv-2.2.zip`).
+2. Unzip it into the folder `preprocess_MIMIC`.
+3. Change `RawDataPath` in the configuration file `config.py` to indicate the relative path, for example: `"RawDataPath": "mimic-iv-2.2/"`.
+4. Run the readmission dataset generation pipeline using the `base_config` defined in the code.
+
+If you are in the root directory, run:
 
 ```bash
 cd preprocess_MIMIC
-python generate_dataset.py
+python generate_dataset.py config.json
 ```
 
 This generates CSV files containing the feature matrix `X` and the readmission target `y` in:
@@ -84,10 +87,10 @@ For more details about the data pipeline and outputs, see:
 
 Simulation is the default mode in this repository.
 
-Run a fully local federated simulation with:
+To run a fully local federated simulation, make sure you are in the root directory where `pyproject.toml` is present, then execute:
 
 ```bash
-flwr run .
+flwr run . --stream
 ```
 
 This will:
@@ -118,7 +121,7 @@ This configuration runs the simulation locally with **3 virtual SuperNodes (clie
 You can override parameters defined in `pyproject.toml` with `--run-config`:
 
 ```bash
-flwr run . --run-config='partitioner="dirichlet" num-server-rounds=50 local-epochs=100'
+flwr run . --run-config='partitioner="dirichlet" dirichlet_alpha=0.8 local-epochs=2' --stream
 ```
 
 ---
@@ -140,23 +143,23 @@ flower-superlink --insecure
 Example with 3 hospitals:
 
 ```bash
-flower-supernode --insecure 
-    --superlink 127.0.0.1:9092 
-    --clientappio-api-address 127.0.0.1:9104 
+flower-supernode --insecure \
+    --superlink 127.0.0.1:9092 \
+    --clientappio-api-address 127.0.0.1:9104 \
     --node-config "partition-id=0 num-partitions=3"
 ```
 
 ```bash
-flower-supernode --insecure 
-    --superlink 127.0.0.1:9092 
-    --clientappio-api-address 127.0.0.1:9105 
+flower-supernode --insecure \
+    --superlink 127.0.0.1:9092 \
+    --clientappio-api-address 127.0.0.1:9105 \
     --node-config "partition-id=1 num-partitions=3"
 ```
 
 ```bash
-flower-supernode --insecure 
-    --superlink 127.0.0.1:9092 
-    --clientappio-api-address 127.0.0.1:9106 
+flower-supernode --insecure \
+    --superlink 127.0.0.1:9092 \
+    --clientappio-api-address 127.0.0.1:9106 \
     --node-config "partition-id=2 num-partitions=3"
 ```
 
@@ -194,9 +197,10 @@ It also tracks summary statistics across clients, including:
 
 Simulation results are automatically saved in the `results/` directory. The final model is also exported as a `.pt` file.
 
-If you had launch, with 10 nodes using our standard paramters, you should obtain:
+If you had launched with 10 nodes using our standard parameters, you should obtain:
 
- ![](docs/images/plot_simu.png)
+![](docs/images/plot_simu.png)
+
 ---
 
 ## License

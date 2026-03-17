@@ -51,7 +51,7 @@ def load_global_data_mimic():
     return testloader
 
 def load_local_data_mimic(partition_id: int, num_partitions: int, 
-                          batch_size: int, partitioner_strat = "iid", dataset_split_arg = None, seed = 42):
+                          batch_size: int, partitioner_strat = "iid", dirichlet_alpha = None, seed = 42):
     # 
     
     if partitioner_strat== "iid":
@@ -59,8 +59,8 @@ def load_local_data_mimic(partition_id: int, num_partitions: int,
     elif partitioner_strat == "dirichlet":
         partitioner = DirichletPartitioner(num_partitions = num_partitions,
                                            partition_by = "label",
-                                           alpha = dataset_split_arg,
-                                           min_partition_size = 750,
+                                           alpha = dirichlet_alpha,
+                                           min_partition_size = 500,
                                            self_balancing = True,
                                            seed = seed)
 

@@ -70,10 +70,10 @@ def get_dataloaders(dataset: str,
                     batch_size: int, 
                     seed: int, 
                     partition_strat: str, 
-                    dataset_split_alpha: float):
+                    dirichlet_alpha: float):
     
     if dataset == "mimiciv":
-        return load_local_data_mimic(partition_id, num_partitions, batch_size, partition_strat, dataset_split_alpha, seed)
+        return load_local_data_mimic(partition_id, num_partitions, batch_size, partition_strat, dirichlet_alpha, seed)
     ### STEP 2 to ADD YOUR DATASET
     else:
         raise NotImplementedError(f"No method for {dataset}")
