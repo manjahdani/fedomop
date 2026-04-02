@@ -1,7 +1,7 @@
 # Personalized Federated Framework with Flower & Docker for OMOP-CDM Multi-Hospital Readmission
 
 **Authors:** Dani Manjah and Pierre Remacle  
-**Last update:** 17/03/2026
+**Last update:** 02/04/2026
 
 ---
 
