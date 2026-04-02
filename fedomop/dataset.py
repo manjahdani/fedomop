@@ -25,7 +25,6 @@ def fit_scaler():
 
 def cache_local_ds(path_prefix:str):
     global fds
-    
     # 1) Load
     X = pd.read_csv(f"{path_prefix}/X.csv")
     Y = pd.read_csv(f"{path_prefix}/Y.csv")
@@ -96,6 +95,7 @@ def load_local_data(
     dirichlet_alpha=None,
     seed=42,
 ):
+    
     if partitioner_strat == "iid":
         partitioner = IidPartitioner(num_partitions=num_partitions)
     elif partitioner_strat =="natural":

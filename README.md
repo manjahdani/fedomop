@@ -231,15 +231,6 @@ It also tracks summary statistics across clients, including:
 
 Simulation results are automatically saved in the `results/` directory. The final model is also exported as a `.pt` file.
 
-If launched with 10 nodes using the standard parameters, you should obtain:
-
-![](docs/images/plot_synthea.png)
-
-
-If launched with 10 nodes on MIMIC-IV, using standard parameters
-
-![](docs/images/plot_mimiciv.png)
-
 ---
 
 ## License

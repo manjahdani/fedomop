@@ -51,7 +51,9 @@ class DatasetSpec:
 
 DATASETS: Dict[str, DatasetSpec] = {
     "mimiciv": DatasetSpec(
-        features= instantiate_ds_and_get_features(local_path_prefix="./preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF"),
+        ## UNCOMMENT IF YOU WANT TO USE MIMIC BUT MAKE SURE TO CONSULT HOW TO GENERATE DATASET AT https://github.com/manjahdani/fedomop
+        #features= instantiate_ds_and_get_features(local_path_prefix="./preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF"),
+        features= None, # TO REPLACE WITH THE LINE ABOVE, WHEN YOU ADDED MIMIC DATA
         targets= None,
         criterion="auroc",
         backend = "tabular",
