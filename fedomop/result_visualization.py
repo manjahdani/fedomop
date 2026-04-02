@@ -8,7 +8,9 @@ def plot_metrics(path):
         data = json.load(f)
 
     # config
+    
     n_clients = data["number_of_nodes"]
+    dataset   = data["run_config"]["dataset"]
     partition = data["run_config"]["partitioner"]
     strategy  = data["run_config"]["strategy"]
     lr        = data["run_config"]["lr"]
@@ -28,13 +30,15 @@ def plot_metrics(path):
 
     # one-line styled title
     plt.title(
+        rf"$\bf{{Dataset}}$: {dataset} | "
         rf"$\bf{{Nodes}}$: {n_clients} | "
         rf"$\bf{{Strategy}}$: {strategy} | "
         rf"$\bf{{Partition}}$: {partition.upper()} | "
         rf"$\bf{{LR}}$: {lr} | "
         rf"$\bf{{Local\ Epochs}}$: {epochs}",
-        fontsize=11,
-        pad=10
+        fontsize=10,
+        pad=10,
+        loc="left"
     )
 
     plt.xlabel("Round")
@@ -52,9 +56,3 @@ def plot_metrics(path):
     base = os.path.splitext(os.path.basename(path))[0]
     filename = f"plot_{base}.png"
     plt.savefig(filename, dpi=300, bbox_inches="tight")
-
-    plt.show()
-
-
-# usage
-#plot_metrics("/export/home/manjah/mimic-pfed/results/mimiciv/10_clients/10_rounds/result-2026-03-17-14-28-03.json")

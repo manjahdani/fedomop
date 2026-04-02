@@ -9,12 +9,12 @@ from functools import partial
 from fedomop.task_utils import (create_instantiate_parameters, 
                                 get_train_and_test_modules, 
                                 custom_aggregate_metricrecords,
-                                load_centralized_data,
                                 seed_all,)
 
+from fedomop.dataset import load_global_data
 from fedomop.log_utils import config_json_file, save_metrics_as_json
-
 from fedomop.result_visualization import plot_metrics
+
 
 # Create Flower ServerApp
 app = ServerApp()
@@ -67,7 +67,8 @@ def main(grid: Grid, context: Context) -> None:
 
 def global_evaluate(server_round: int, arrays: ArrayRecord, dataset: str, model_cls: str) -> MetricRecord:
     """Evaluate model on central data."""
-        
+
+       
     # Load the model and initialize it with the received weights
     model = create_instantiate_parameters(dataset, model_cls)
     model.load_state_dict(arrays.to_torch_state_dict())
@@ -75,7 +76,7 @@ def global_evaluate(server_round: int, arrays: ArrayRecord, dataset: str, model_
     model.to(device)
 
     # Load entire test set
-    test_dataloader = load_centralized_data(dataset)
+    test_dataloader = load_global_data()
     
     _, eval_fn, _, _ =  get_train_and_test_modules(dataset)
     # Evaluate the global model on the test set

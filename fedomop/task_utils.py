@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from fedomop.dataset import load_local_data_mimic, load_global_data_mimic, get_mimic_features
+from fedomop.dataset import load_local_data, instantiate_ds_and_get_features
 from fedomop.model import create_resmlp
 
 
@@ -51,7 +51,17 @@ class DatasetSpec:
 
 DATASETS: Dict[str, DatasetSpec] = {
     "mimiciv": DatasetSpec(
-        features= get_mimic_features(),
+        features= instantiate_ds_and_get_features(local_path_prefix="./preprocess_MIMIC/data/output/cohort_icu_readmission_24_1_HF"),
+        targets= None,
+        criterion="auroc",
+        backend = "tabular",
+        isErrorMetric = False,
+        models={
+            "ResMLP": create_resmlp,
+        },
+    ),
+    "synthea-small": DatasetSpec(
+        features= instantiate_ds_and_get_features(dataset="synthea_small"),
         targets= None,
         criterion="auroc",
         backend = "tabular",
@@ -72,8 +82,8 @@ def get_dataloaders(dataset: str,
                     partition_strat: str, 
                     dirichlet_alpha: float):
     
-    if dataset == "mimiciv":
-        return load_local_data_mimic(partition_id, num_partitions, batch_size, partition_strat, dirichlet_alpha, seed)
+    if dataset in ["mimiciv", "synthea-small"]:
+        return load_local_data(partition_id, num_partitions, batch_size, partition_strat, dirichlet_alpha, seed)
     ### STEP 2 to ADD YOUR DATASET
     else:
         raise NotImplementedError(f"No method for {dataset}")
@@ -105,11 +115,7 @@ def get_train_and_test_modules(dataset: str):
     return train, test, isErrorMetric, criterion
 
 
-def load_centralized_data(dataset:str):
-    if dataset == "mimiciv":
-        return load_global_data_mimic()
-    else:
-        raise NotImplementedError(f"No method for {dataset}")
+
 
 def create_instantiate_parameters(dataset: str, model: str) -> nn.Module:
     """
