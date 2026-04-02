@@ -53,9 +53,16 @@ For more details about the dataset and preprocessing workflow, see:
 
 ### MIMIC-IV
 
-For a more realistic dataset, this repository also provides a preprocessing pipeline for **MIMIC-IV v2.2** Electronic Health Record (EHR) data, converting it into structured **static** and **time-series** features.
+For a more realistic dataset, this repository also provides a preprocessing pipeline for **MIMIC-IV v2.2** Electronic Health Record (EHR) data, converting it into structured **static** and **time-series** features. 
 
-The code provided here is dedicated to the **readmission** use case. The same overall pipeline can be adapted to other tasks such as:
+Make sure you are on our official github 
+
+```text
+https://github.com/manjahdani/fedomop
+```
+where the data generation code will be hosted due to privacy concerns.
+
+If you are at right place, the code provided here is dedicated to the **readmission** use case. The same overall pipeline can be adapted to other tasks such as:
 
 - mortality prediction
 - length of stay
