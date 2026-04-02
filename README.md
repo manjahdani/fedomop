@@ -226,7 +226,12 @@ Simulation results are automatically saved in the `results/` directory. The fina
 
 If launched with 10 nodes using the standard parameters, you should obtain:
 
-![](docs/images/plot_simu.png)
+![](docs/images/plot_synthea.png)
+
+
+If launched with 10 nodes on MIMIC-IV, using standard parameters
+
+![](docs/images/plot_mimiciv.png)
 
 ---
 

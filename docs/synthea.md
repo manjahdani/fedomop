@@ -19,14 +19,7 @@ The raw synthetic records were generated using **Synthea**:
 https://github.com/synthetichealth/synthea
 ```
 
-The current sample metadata corresponds to six state-based runs:
-
-- Arizona
-- California
-- Connecticut
-- Massachusetts
-- Ohio
-- Oregon
+The current sample metadata corresponds to six state-based runs (Arizona, California, Connecticut, Massachusetts, Ohio, Oregon):
 
 Each run contains **10 years of exported history**, with small sample sizes ranging from **21 to 28 patients** in the uploaded metadata.
 
