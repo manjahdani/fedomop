@@ -1,0 +1,12 @@
+#Cache
+**/__pycache__/
+
+#Extension
+*.pt
+.vscode/
+*.DS_Store
+
+#Folder
+/results/
+data/
+mimic-iv-2.2/
